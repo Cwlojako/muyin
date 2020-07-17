@@ -1,0 +1,86 @@
+<template>
+  <el-dialog
+    title="热搜词"
+    :visible.sync="dialogVisible"
+    :modal-append-to-body='false'
+    width="40%"
+    :before-close="handleClose">
+    <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
+      <el-form-item label="关键词" prop="keyword">
+        <el-input v-model="formValidate.keyword" placeholder="请输入关键词"></el-input>
+      </el-form-item>
+      <el-form-item label="排序数值" prop="sort">
+        <el-input-number v-model="formValidate.sort" placeholder="请输入排序数值"></el-input-number>
+      </el-form-item>
+    </el-form>
+    <div slot="footer" class="dialog-footer">
+      <el-button @click="handleClose">取 消</el-button>
+      <el-button type="primary" @click="handleConfirm('formValidate')">确 定</el-button>
+    </div>
+  </el-dialog>
+</template>
+
+<script>
+  import Upload from "@/framework/components/upload";
+  import emitter from '@/framework/mixins/emitter'
+  import {save} from '@/project/service/manager'
+
+  export default {
+    name: "hotSearchAdd",
+    mixins: [emitter],
+    components: {
+      Upload
+    },
+    props: {
+      dialogVisible: {
+        type: Boolean,
+        default: false,
+      }
+    },
+    data() {
+      return {
+        // 添加表单校验规则
+        ruleValidate: {
+          phone: [
+            {required: true, message: "手机号不能为空", trigger: "blur"}
+          ],
+          nickname: [
+            {required: true, message: "昵称不能为空", trigger: "blur"}
+          ]
+        },
+        model:'manager',
+        formValidate: {
+          status: '启用',
+          keyword: '',
+          sort: ''
+        }
+      }
+    },
+    methods: {
+      changeType() {},
+      handleClose() {
+        this.$refs.formValidate.resetFields();
+        this.$emit('on-dialog-close');
+      },
+
+      handleConfirm(name) {
+        this.$nextTick(() => {
+          this.$refs[name].validate(valid => {
+            if (valid) {
+              save(
+                {[this.model]:this.formValidate},
+                res => {
+                  this.$message.success('添加成功');
+                  this.$refs.formValidate.resetFields();
+                  this.$emit('on-save-success');
+                })
+            }
+          })
+        });
+      }
+    }
+  }
+</script>
+
+<style scoped>
+</style>

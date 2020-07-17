@@ -1,0 +1,210 @@
+[
+  {
+    "displayName": "用户管理",
+    "icon": "el-icon-user",
+    "mid": 1,
+    "children": [
+      {
+        "displayName": "用户列表",
+        "link": "/user/list",
+        "mid": 0
+      },
+      {
+        "displayName": "宝宝信息管理",
+        "link": "/baby/list",
+        "mid": 0
+      }
+    ]
+  },
+  {
+    "displayName": "系统管理",
+    "icon": "el-icon-setting",
+    "mid": 1,
+    "children": [
+      {
+        "displayName": "管理员管理",
+        "link": "/manager/list",
+        "mid": 0
+      },
+      {
+        "displayName": "角色管理",
+        "link": "/role/list",
+        "mid": 0
+      },
+      {
+        "displayName": "APP管理",
+        "link": "/version/list",
+        "mid": 0
+      },
+      {
+        "displayName": "系统操作日志",
+        "link": "/log/list",
+        "mid": 0
+      },
+      {
+        "displayName": "积分规则管理",
+        "link": "/pointRule/list",
+        "mid": 0
+      },
+      {
+        "displayName": "时区管理",
+        "link": "/timeZone/list",
+        "mid": 0
+      },
+      {
+        "displayName": "疫苗管理",
+        "link": "/vaccin/list",
+        "mid": 0
+      }
+    ]
+  },
+  {
+    "displayName": "设备管理",
+    "icon": "el-icon-mobile-phone",
+    "mid": 1,
+    "children": [
+      {
+        "displayName": "设备管理",
+        "link": "/equipment/list",
+        "mid": 0
+      }
+    ]
+  },
+  {
+    "displayName": "商品管理",
+    "icon": "el-icon-shopping-bag-1",
+    "mid": 1,
+    "children": [
+      {
+        "displayName": "商品管理",
+        "link": "/goods/list",
+        "mid": 0
+      },
+      {
+        "displayName": "商品分类",
+        "link": "/goodsCategory/list",
+        "mid": 0
+      },
+      {
+        "displayName": "评价管理",
+        "link": "/evaluate/list",
+        "mid": 0
+      },
+      {
+        "displayName": "品牌管理",
+        "link": "/brand/list",
+        "mid": 0
+      },
+      {
+        "displayName": "喂养阶段管理",
+        "link": "/feedLevel/list",
+        "mid": 0
+      }
+    ]
+  },
+  {
+    "displayName": "交易管理",
+    "icon": "el-icon-tickets",
+    "mid": 1,
+    "children": [
+      {
+        "displayName": "订单管理",
+        "link": "/order/list",
+        "mid": 0
+      },
+      {
+        "displayName": "订单发货",
+        "link": "/deliver/list",
+        "mid": 0
+      },
+      {
+        "displayName": "售后单管理",
+        "link": "/afterSale/list",
+        "mid": 0
+      },
+      {
+        "displayName": "物流管理",
+        "link": "/logistics/list",
+        "mid": 0
+      },
+      {
+        "displayName": "优惠券管理",
+        "link": "/discount/list",
+        "mid": 0
+      }
+    ]
+  },
+  {
+    "displayName": "消息管理",
+    "icon": "el-icon-message",
+    "mid": 1,
+    "children": [
+      {
+        "displayName": "消息推送管理",
+        "link": "/notification/list",
+        "mid": 0
+      }
+    ]
+  },
+  {
+    "displayName": "内容管理",
+    "icon": "el-icon-chat-line-round",
+    "mid": 1,
+    "children": [
+      {
+        "displayName": "热搜管理",
+        "link": "/hotSearch/list",
+        "mid": 0
+      },
+      {
+        "displayName": "敏感词管理",
+        "link": "/sensitiveWord/list",
+        "mid": 0
+      },
+      {
+        "displayName": "广告管理",
+        "link": "/advertisement/list",
+        "mid": 0
+      },
+      {
+        "displayName": "帮助中心管理",
+        "link": "/help/list",
+        "mid": 0
+      },
+      {
+        "displayName": "孕育资讯管理",
+        "link": "/information/list",
+        "mid": 0
+      },
+      {
+        "displayName": "论坛文章管理",
+        "link": "/article/list",
+        "mid": 0
+      }
+    ]
+  },
+  {
+    "displayName": "互动管理",
+    "icon": "el-icon-connection",
+    "mid": 1,
+    "children": [
+      {
+        "displayName": "意见反馈",
+        "link": "/advice/list",
+        "mid": 0
+      }
+    ]
+  },
+  {
+    "displayName": "财务管理",
+    "icon": "el-icon-coin",
+    "mid": 1,
+    "children": [
+      {
+        "displayName": "平台流水",
+        "link": "/finance/list",
+        "mid": 0
+      }
+    ]
+  }
+]
