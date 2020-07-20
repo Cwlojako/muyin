@@ -39,14 +39,11 @@
 <script>
   import Upload from "@/framework/components/upload";
   import Editor from "@/framework/components/editor"
-  import { save } from '@/project/service/page' //接口
-  import Emitter from '@/framework/mixins/emitter'
 
   export default {
-    mixins: [Emitter],
     name: "creat",
     components: {
-      Upload,Editor
+      Upload, Editor
     },
     props: {
       dialogVisible: {
@@ -60,12 +57,9 @@
     },
     data() {
       return {
-        categoryList:[],
-        radio: '1',//1是启用的意思
         show: false,
-
         formValidate: {
-          label:'help'
+          label: 'help'
         },
         ruleValidate: {
           title: [{required: true, message: '不能为空', trigger: 'blur'}],
@@ -107,7 +101,6 @@
       },
 
     },
-
     created() {
       // this.findById()
     }

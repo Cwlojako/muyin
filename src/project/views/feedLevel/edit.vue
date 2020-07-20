@@ -7,10 +7,10 @@
     :before-close="handleClose">
     <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
       <el-form-item label="喂养阶段名称" prop="name">
-        <el-input v-model="formValidate.username" placeholder="请输入喂养阶段名称"></el-input>
+        <el-input v-model="formValidate.name" placeholder="请输入喂养阶段名称"></el-input>
       </el-form-item>
-      <el-form-item label="初始年龄" prop="age">
-        <el-input v-model="formValidate.id" placeholder="请输入该阶段的初始年龄"></el-input>
+      <el-form-item label="初始年龄" prop="days">
+        <el-input v-model="formValidate.days" placeholder="请输入该阶段的初始年龄"></el-input>&nbsp;天
       </el-form-item>
     </el-form>
     <div slot="footer" class="dialog-footer">
@@ -21,17 +21,9 @@
 </template>
 
 <script>
-  import Upload from "@/framework/components/upload";
-  import Editor from "@/framework/components/editor"
-  import {get,update} from '@/project/service/manager'
-  import Emitter from '@/framework/mixins/emitter'
+  import { get, update } from '@/project/service/stage'
 
   export default {
-    mixins: [Emitter],
-    name: "feedLevelEdit",
-    components: {
-      Upload,Editor
-    },
     props: {
       dialogVisible: {
         type: Boolean,
@@ -44,12 +36,18 @@
     },
     data() {
       return {
-        formValidate: {},
-        ruleValidate: {
-          username: [{required: true, message: '不能为空', trigger: 'blur'}],
-          id: [{required: true, message: '不能为空', trigger: 'blur'}],
+        formValidate: {
+          name: '',
+          days: ''
         },
-
+        ruleValidate: {
+          name: [
+            {required: true, message: "阶段名称不能为空", trigger: "blur"}
+          ],
+          days: [
+            {required: true, message: "初始年龄不能为空", trigger: "blur"}
+          ]
+        }
       }
     },
     methods: {
@@ -58,14 +56,21 @@
         this.$emit('on-dialog-close');
       },
       handleConfirm() {
-        update({page: this.formValidate}, res => {
-          this.$notify.success('修改成功');
-          this.$emit('on-save-success');
+        this.$refs.formValidate.validate(valid => {
+          if (!valid) return false
+          update({stage: this.formValidate}, res => {
+            this.$message({
+              type: 'success',
+              message: '修改成功'
+            });
+            this.handleClose()
+            this.$emit('refreshData');
+          })
         })
       },
       findById() {
         if (this.id) {
-          get({id:this.id},res => {
+          get({id: this.id},res => {
             this.formValidate = res;
           })
         }
@@ -73,7 +78,7 @@
     },
     watch: {
       dialogVisible(e) {
-        if(e){
+        if (e) {
           this.findById()
         }
       }

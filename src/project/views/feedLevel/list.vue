@@ -54,11 +54,15 @@
               @click.native.prevent="toDetail(scope.row)"
               type="text"
               size="small">
-              {{scope.row.username}}
+              {{scope.row.name}}
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column prop="age" label="初始年龄"></el-table-column>
+        <el-table-column prop="days" label="初始年龄">
+          <template slot-scope="scope">
+            {{scope.row.days}}天
+          </template>
+        </el-table-column>
         <el-table-column fixed="right" label="操作">
           <template slot-scope="scope">
             <el-button @click="handleDelete(scope.row.id)" type="text" size="small">删除</el-button>
@@ -70,6 +74,7 @@
     <i-create
       :dialog-visible="createProps.visible"
       @on-dialog-close="handleClose"
+      @refreshData='search(1)'
     />
 
     <!--    编辑-->
@@ -77,6 +82,7 @@
       :dialog-visible="editProps.visible"
       :id="editId"
       @on-dialog-close="handleClose"
+      @refreshData='search(page)'
     />
   </el-row>
 </template>
@@ -84,16 +90,14 @@
   import Search from "@/framework/components/search";
   import ICreate from "./create"
   import IEdit from "./edit"
-  import {post} from "@/framework/http/request";
   import Emitter from '@/framework/mixins/emitter'
-  // user接口
-  import {search, count, del} from '@/project/service/manager'
+  import { search, deleteById, count, del } from '@/project/service/stage'
 
   export default {
     mixins: [Emitter],
     data() {
       return {
-        model: "feedLevel",
+        model: "stage",
         createProps: {
           visible: false
         },
@@ -108,11 +112,6 @@
         total: 0,
       };
     },
-    computed: {
-      route() {
-        return this.$route;
-      }
-    },
     components: {
       Search, ICreate, IEdit
     },
@@ -120,36 +119,28 @@
       toCreate() {
         this.createProps.visible = true;
       },
-
       search(page) {
-        let _t = this;
-        _t.page = page;
+        this.page = page;
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
+            size: this.pageSize
           },
-          manager: {}
+          [this.model]: {}
         };
         search(param, res => {
-          let data = res;
-          _t.data = data;
-          _t.getTotal();
+          this.data = res;
+          this.getTotal();
         });
       },
-
       getTotal() {
-        let _t = this;
-        let param = {manager: {}};
+        let param = {[this.model]: {}};
         count(param, res => {
-          _t.total = parseInt(res);
+          this.total = parseInt(res);
         });
       },
-
       //批量删除
       batchDelete() {
-        let _t = this;
         let selectList = this.selectList;
         this.$confirm('确定删除所选的记录吗?', '删除提示', {
           confirmButtonText: '确定',
@@ -157,14 +148,14 @@
           type: 'warning'
         }).then(() => {
           selectList.map(s => {
-            delete({id: s.id}, res => {
-              _t.search(_t.page);
-              this.$message({
-                type: 'success',
-                message: '删除成功!'
-              });
+            del({id: s.id}, res => {
+              this.search(this.page);
             })
           })
+          this.$message({
+            type: 'success',
+            message: '删除成功!'
+          });
         }).catch(() => {
           this.$message({
             type: 'info',
@@ -172,15 +163,14 @@
           });
         });
       },
-
       handleDelete(id) {
         this.$confirm('确定删除该阶段吗?', '删除提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
-          del({id: id}, res => {
-            _t.search(_t.page);
+          deleteById({id: id}, res => {
+            this.search(this.page);
             this.$message({
               type: 'success',
               message: '删除成功!'

@@ -12,34 +12,30 @@
             </el-button>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item command="编辑">编辑</el-dropdown-item>
-              <el-dropdown-item command="启用">启用</el-dropdown-item>
-              <el-dropdown-item command="禁用">禁用</el-dropdown-item>
+              <el-dropdown-item command="启用"
+              :disabled="postData.enabled"
+              :style="postData.enabled ? {'color':'rgba(255,255,255,0.4)'} : {'color':'#fff'}">
+                启用
+              </el-dropdown-item>
+              <el-dropdown-item command="禁用" 
+              :disabled="!postData.enabled"
+              :style="!postData.enabled ? {'color':'rgba(255,255,255,0.4)'} : {'color':'#fff'}">
+                禁用
+              </el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </div>
         <div class="text-item">
           <span class="text_label">状态：</span>
-          {{page.status}}
+          {{postData.enabled ? '启用' : '禁用'}}
         </div>
         <div class="text-item">
           <span class="text_label">更新时间：</span>
-          {{page.updateAt}}
-        </div>
-        <div class="text-item">
-          <span class="text_label">浏览数：</span>
-          {{page.viewNum}}
-        </div>
-        <div class="text-item">
-          <span class="text_label">收藏数：</span>
-          {{page.collectNum}}
-        </div>
-        <div class="text-item">
-          <span class="text_label">分享次数：</span>
-          {{page.shareNum}}
+          {{postData.createTime}}
         </div>
         <div class="text-item">
           <span class="text_label">评论数：</span>
-          {{page.commentNum}}
+          {{postData.commentNum}}
         </div>
       </el-card>
     </el-col>
@@ -84,7 +80,7 @@
             <el-table-column prop="status" label="状态"></el-table-column>
             <el-table-column fixed="right" align="center" label="操作" width="200">
               <template slot-scope="scope">
-                <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.status.indexOf('启用') >= 0 ? '禁用' : '启用'}}</el-button>
+                <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.enabled ? '禁用' : '启用'}}</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -110,28 +106,27 @@
 </template>
 
 <script>
-  import {get} from '@/project/service/page'
-  import { search, count }  from '@/project/service/manager'
+  import { get, updateEnable } from '@/project/service/post'
   import IEdit from './edit'
   import ICreateComment from './createComment'
   export default {
     name: "show",
     data() {
       return {
-        model: 'manager',
+        model: 'post',
         data: [],
         extraParam: {},
         textarea:'',
-        page: {},
+        postData: {},
         id: this.$route.params.id,
         editId: parseInt(this.$route.params.id),
         activeName: 'first',
-        editProps:{
-          visible:false
-        },
         pageSize: 10,
         page: 1,
         total: 0,
+        editProps:{
+          visible:false
+        },
         createProps: {
           visible: false
         }
@@ -141,10 +136,9 @@
       IEdit, ICreateComment
     },
     created() {
-      this.findById();
+      this.getById();
       this.search(1)
     },
-
     methods: {
       send() {
         updateComment({storeId: this.id,comment:this.textarea}, res => {
@@ -152,12 +146,13 @@
             type: 'success',
             message: '已提交!'
           });
-          this.findById();
+          this.getById();
         });
       },
-      findById() {
+      getById() {
         get({id: this.id}, res => {
-          this.page = res;
+          console.log(res)
+          this.postData = res;
         });
       },
       handleClick(command){
@@ -165,7 +160,33 @@
           case '编辑':
             this.editProps.visible = true;
             break;
+          case '启用':
+            this.updateEnable()
+            break;
+          case '禁用':
+            this.updateDisable()
+            break;
         }
+      },
+      // 启用文章
+      updateEnable() {
+        updateEnable({id: this.id, enable: true}, res => {
+          this.$message({
+            type: 'success',
+            message: '已启用!'
+          });
+          this.getById();
+        })
+      },
+      // 禁用文章
+      updateDisable() {
+        updateEnable({id: this.id, enable: false}, res => {
+          this.$message({
+            type: 'success',
+            message: '已禁用!'
+          });
+          this.getById();
+        })
       },
       search(page) {
         let _t = this;
@@ -192,8 +213,6 @@
           _t.total = parseInt(res);
         });
       },
-
-      handleStatusChange() {},
       handleClose(){
         this.editProps.visible = false
         this.createProps.visible = false
@@ -202,7 +221,6 @@
         this.findById();
         this.handleClose();
       },
-
       handleCurrentChange(val) {
         this.page = val;
         this.search(this.page);
@@ -211,7 +229,6 @@
         this.pageSize = pageSize;
         this.search(this.page);
       },
-
       // 添加评论弹框
       toCreate() {
         this.createProps.visible = true

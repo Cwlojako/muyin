@@ -23,7 +23,11 @@
         :data="timeZoneData"
         style="width: 95%;margin:0 auto;">
         <el-table-column prop="name" label="时区名称"></el-table-column>
-        <el-table-column prop="delta" label="系统时差"></el-table-column>
+        <el-table-column prop="delta" label="系统时差">
+          <template slot-scope="scope">
+            {{scope.row.delta}}小时
+          </template>
+        </el-table-column>
       </el-table>
     </el-col>
     <!--    新建-->
@@ -60,7 +64,7 @@
       },
 
       getTimeZoneData(page) {
-        search({timezone: {}, pageable: {page: page, size: this.size, desc: 'id'}}, res => {
+        search({timezone: {}, pageable: {page: page, size: this.pageSize, desc: 'id'}}, res => {
           this.timeZoneData = res
           this.getTotal()
         })
