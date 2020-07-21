@@ -35,7 +35,7 @@
         </div>
         <div class="text-item">
           <span class="text_label">评论数：</span>
-          {{postData.commentNum}}
+          
         </div>
       </el-card>
     </el-col>
@@ -45,7 +45,8 @@
         <div slot="header" class='box-card-header'>
           <span class='box-card-header-left'>文章内容</span>
         </div>
-        <div v-html="page.content"></div>
+        <p class='detail-title'>文章标题：{{postData.title}}</p>
+        <p class='detail-title'>文章内容：{{postData.content}}</p>
       </el-card>
     </el-col>
     <!--    评论记录-->
@@ -73,8 +74,11 @@
         </el-col>
         <el-col :span="24" class="detail-bottom-table">
           <el-table :data="data" style="width: 95%;margin: 10px auto;">
+            <el-table-column prop="type" label="评论类型"></el-table-column>
             <el-table-column prop="phone" label="评论人手机号"></el-table-column>
             <el-table-column prop="name" label="评论人姓名"></el-table-column>
+            <el-table-column prop="name" label="回复对象手机号"></el-table-column>
+            <el-table-column prop="name" label="回复对象姓名"></el-table-column>
             <el-table-column sortable prop="createAt" label="评论时间"></el-table-column>
             <el-table-column prop="content" label="评论内容"></el-table-column>
             <el-table-column prop="status" label="状态"></el-table-column>
@@ -92,7 +96,6 @@
       :dialog-visible="editProps.visible"
       @on-dialog-close="handleClose"
       @on-save-success="handleSave"
-      :editId="editId"
     />
 
     <!--    添加评论弹框-->
@@ -100,7 +103,6 @@
       :dialog-visible="createProps.visible"
       @on-dialog-close="handleClose"
       @on-save-success="handleSave"
-      :editId="editId"
     />
   </div>
 </template>
@@ -110,17 +112,13 @@
   import IEdit from './edit'
   import ICreateComment from './createComment'
   export default {
-    name: "show",
     data() {
       return {
         model: 'post',
         data: [],
         extraParam: {},
-        textarea:'',
         postData: {},
         id: this.$route.params.id,
-        editId: parseInt(this.$route.params.id),
-        activeName: 'first',
         pageSize: 10,
         page: 1,
         total: 0,
@@ -129,7 +127,9 @@
         },
         createProps: {
           visible: false
-        }
+        },
+        // 评论表格数组
+        commentArr: []
       }
     },
     components:{
@@ -137,7 +137,6 @@
     },
     created() {
       this.getById();
-      this.search(1)
     },
     methods: {
       send() {
@@ -151,9 +150,8 @@
       },
       getById() {
         get({id: this.id}, res => {
-          console.log(res)
           this.postData = res;
-        });
+        })
       },
       handleClick(command){
         switch (command) {
@@ -237,44 +235,7 @@
   }
 </script>
 <style lang="less" scoped>
-  .user-detail {
-    width:100%;
-    height:100%;
-    padding: 20px;
-    box-sizing: border-box;
-    .user-detail-left {
-      padding-right: 10px;
-      box-sizing: border-box;
-      .box-card {
-        height: 600px;
-        margin-bottom: 10px;
-        .box-card-header-right {
-          float: right;
-        }
-        .text-item {
-          padding: 5px 0;
-        }
-        .text-item-avatar {
-          display: flex;
-          align-items: center;
-        }
-      }
-    }
-    .user-detail-right {
-      .box-card {
-        height: 600px;
-      }
-      .tabel-data {
-        margin-top: 5px;
-      }
-    }
-    .detail-bottom {
-      .detail-bottom-table {
-        margin-bottom: 100px;
-      }
-    }
-  }
-  .el-card/deep/.el-card__header {
-    padding: 10px 18px;
-  }
+.detail-title {
+  margin: 5px 0;
+}
 </style>

@@ -16,7 +16,7 @@
        >
          <i class="el-icon-plus"></i>
        </el-upload>
-       <el-dialog title="查看图片" :visible.sync="dialogVisible"  :modal-append-to-body='false'>
+       <el-dialog title="查看图片" :visible.sync="dialogVisible" :modal-append-to-body='false'>
          <img width="100%" :src="dialogImageUrl" alt="">
        </el-dialog>
      </div>
@@ -76,7 +76,7 @@ export default {
     //拼接前缀
     prefix: {
       type: String,
-      default: 'http://47.107.184.144/attachment/'
+      default: 'http://8.129.170.69/attachment/'
     },
     //多选
     multiple: {
@@ -97,39 +97,39 @@ export default {
        imageUrl: ''
      }
   },
-  watch:{
-    /**
-     * @Description: 修改了请求接口数据后显示不出的情况
-     * @author zd Lin
-     * @date 2020/3/20
-     */
-    fileList(val){
-      if (val.length > 0) {
-        this.defaultList = val.map((s,i) => {
-          if (s) {
-            let obj = {
-              name: s,
-              url:this.prefix + s,
-              response:{
-                data:s
-              }
-            };
-            return obj;
-          }
-        });
-        console.log(this.defaultList, 'watch')
-      }
-    }
-  },
-  created(){
+  // watch:{
+  //   /**
+  //    * @Description: 修改了请求接口数据后显示不出的情况
+  //    * @author zd Lin
+  //    * @date 2020/3/20
+  //    */
+  //   fileList(val){
+  //     if (val.length > 0) {
+  //       this.defaultList = val.map((s,i) => {
+  //         if (s) {
+  //           let obj = {
+  //             name: s,
+  //             url:this.prefix + s,
+  //             response:{
+  //               data:s
+  //             }
+  //           };
+  //           return obj;
+  //         }
+  //       });
+  //       console.log(this.defaultList, 'watch')
+  //     }
+  //   }
+  // },
+  created() {
     if (this.fileList.length > 0) {
       this.defaultList = this.fileList.map((s,i) => {
         if (s){
           let obj = {
             name: s,
-            url:this.prefix + s,
+            url: this.prefix + s,
             response:{
-              data:s
+              data: s
             }
           };
           return obj;
@@ -139,6 +139,10 @@ export default {
     }
     this.$on("on-form-submit", () => {
       this.$emit("on-transport-file-list", this.defaultList);
+    });
+    // 关闭弹框时删除图片预览
+    this.$on("on-close", () => {
+      this.defaultList = []
     });
   },
   methods: {
@@ -163,6 +167,7 @@ export default {
       this.dialogImageUrl = file.url;
       this.dialogVisible = true;
     },
+    
     handleExceed(file,fileList) {
       console.log(file,fileList);
       this.$notify({

@@ -11,30 +11,38 @@
               <img src="../../assets/more.png" alt="" width="14" height="12">
             </el-button>
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item command="状态">启用</el-dropdown-item>
-              <el-dropdown-item command="状态">禁用</el-dropdown-item>
+              <el-dropdown-item command="状态"
+              :disabled="user.enabled"
+              :style="user.enabled?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}">
+                启用
+              </el-dropdown-item>
+              <el-dropdown-item command="状态"
+              :disabled="!user.enabled"
+              :style="!user.enabled?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}">
+                禁用
+              </el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </div>
         <div class="text-item">
           <span class="text_label">启用状态：</span>
-          {{user.status}}
+          {{user.enabled ? '启用' : '禁用'}}
         </div>
         <div class="text-item">
           <span class="text_label">注册时间：</span>
-          {{user.createAt}}
+          {{user.createTime}}
         </div>
         <div class="text-item">
           <span class="text_label">最近登录时间：</span>
-          {{user.accessAt}}
+          {{user.loginTime}}
         </div>
         <div class="text-item">
           <span class="text_label">累计消费金额：</span>
-          {{user.comment}}
+          {{user.totalAmount}}
         </div>
         <div class="text-item">
           <span class="text_label">积分：</span>
-          {{user.comment}}
+          {{user.point}}
         </div>
       </el-card>
       <!-- 基本信息 -->
@@ -45,13 +53,13 @@
         <div class="text-item text-item-avatar">
           <span class="text_label">头像：</span>
           <el-avatar shape="circle" :size="45" :fit="'fill'"
-            :src="'https://fuss10.elemecdn.com/e/5d/4a731a90594a4af544c0c25941171jpeg.jpeg'"
+            :src='`http://8.129.170.69/attachment/${user.avatar}`'
             class="head-setting-right-avatar">
           </el-avatar>
         </div>
         <div class="text-item">
           <span class="text_label">手机号：</span>
-          {{user.status}}
+          {{user.phone}}
         </div>
         <div class="text-item">
           <span class="text_label">昵称：</span>
@@ -59,7 +67,7 @@
         </div>
         <div class="text-item">
           <span class="text_label">性别：</span>
-          {{user.email}}
+          {{user.gender}}
         </div>
       </el-card>
       <!-- 备注信息 -->
@@ -138,19 +146,22 @@
       width="50%"
       :before-close="handleClose">
       <el-form ref="formValidate" :model="formValidate" label-width="150px">
-        <el-form-item label="备注" prop="tip">
-          <el-input type='textarea' v-model="formValidate.tip" placeholder="请输入备注"></el-input>
+        <el-form-item label="备注" prop="comment">
+          <el-input type='textarea' v-model="formValidate.comment" placeholder="请输入备注"></el-input>
         </el-form-item>
       </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="handleClose">取 消</el-button>
+        <el-button type="primary" @click="handleConfirm">确 定</el-button>
+      </div>
     </el-dialog>
   </div>
 </template>
 
 <script>
-  import {get, enable, disable, findById} from '@/project/service/user'
+  import {get, enable, disable, update} from '@/project/service/user'
   import search from '@/framework/components/search'
   export default {
-    name: "userDetail",
     components: {
       search
     },
@@ -159,7 +170,7 @@
         user: {},
         // 备注编辑弹框绑定数据对象
         formValidate: {
-          tip: ''
+          comment: ''
         },
         // 备注编辑弹框
         tipEditProps: {
@@ -168,7 +179,6 @@
         // 用户详情数据
         data: [],
         id: this.$route.params.id,
-        activeName: 'first',
         // 搜索框搜索栏目
         searchItems: [
           {
@@ -194,7 +204,6 @@
         ],
         // 额外搜索条件参数
         extraParam: {},
-
         // 分页组件参数
         pageSize: 10,
         page: 1,
@@ -206,15 +215,17 @@
     },
     methods: {
       findById() {
-        findById({id: this.id}, res => {
+        get({id: this.id}, res => {
+          console.log(res)
           this.user = res;
         });
       },
       handleClick(command){
         switch (command) {
           case '状态':
-            let status = this.user.status;
-            if (status === '禁用') {
+            let status = this.user.enabled ? '禁用' : '启用';
+            console.log(status)
+            if (status === '启用') {
               enable({id: this.id}, res => {
                 this.$message({
                   type: 'success',
@@ -259,30 +270,21 @@
 
       // 用户详情列表查询交易记录
       search(page) {
-        let _t = this;
-        _t.page = page;
+        this.page = page;
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
+            size: this.pageSize
           },
-          [this.model]: _t.extraParam
+          [this.model]: this.extraParam
         };
-        if (
-          param.pageable.sort.asc.length === 0 &&
-          param.pageable.sort.desc.length === 0
-        ) {
-          delete param.pageable.sort;
-        }
         search(param, res => {
-          let data = res;
-          _t.data = data;
-          _t.getTotal();
+          this.data = res;
+          this.getTotal();
         });
       },
-
       // 分页组件监听函数
+
       // 监听当前页数变换
       handleCurrentChange(val) {
         this.page = val;
@@ -296,6 +298,20 @@
 
       handleClose() {
         this.tipEditProps.visible = false
+        this.$refs.formValidate.resetFields()
+      },
+
+      handleConfirm() {
+        // 确认编辑备注
+        let param = Object.assign(this.formValidate, {id: parseInt(this.id)})
+        update({user: param}, res => {
+          this.$message({
+            type: 'success',
+            message: '修改备注成功'
+          })
+          this.findById()
+          this.handleClose()
+        })
       }
     }
   }

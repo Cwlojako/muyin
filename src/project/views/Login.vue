@@ -2,7 +2,7 @@
   <div class="page">
     <div class="login-wrapper">
       <div class="login-wrapper-title">
-        <h1>Ewhale</h1>
+        <h1>母婴后台管理系统</h1>
       </div>
       <div class="login">
         <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" >
@@ -26,59 +26,51 @@
 </template>
 <script>
   const md5 = require('js-md5');
-  const LOGIN_URL = "/api/manager/login";
-  import {post} from "@/framework/http/request"
+  const LOGIN_URL = "/api/manager/authenticateByUsername";
+  import { getManagerWithToken } from '@/project/service/user'
+  import { post } from "@/framework/http/request"
   export default {
     name: "Login",
     data() {
       return {
-        projectName: "后台管理系统",
         formValidate: {
-          username: "account_3",
-          password: "112233"
+          username: "cwlojako",
+          password: "123456"
         },
         ruleValidate: {
-          username: [
-            {
-              required: true,
-              message: "用户名不能为空",
-              trigger: "blur"
-            }
-          ],
-          password: [
-            {
-              required: true,
-              message: "登录密码不能为空",
-              trigger: "blur"
-            }
-          ]
+          username: [{required: true,message: "用户名不能为空",trigger: "blur"}],
+          password: [{required: true,message: "登录密码不能为空",trigger: "blur"}]
         }
       };
     },
     methods: {
       handleSubmit(name) {
-        let _t = this;
         this.$refs[name].validate(valid => {
           if (valid) {
             // 如果校验成功则发送登录请求
             let param = {
-              username: _t.formValidate.username,
-              // password:  md5(_t.formValidate.password),
-              password: _t.formValidate.password
+              username: this.formValidate.username,
+              // password:  md5(this.formValidate.password),
+              password: this.formValidate.password
             };
             // 这里是用axios封装的post方法，第一个参数是路径，第二个参数是参数，第三是回调函数，数据存储在回调中
             post(LOGIN_URL, param ,(res) =>{
-              console.log(res)
-              let user = res;
-              // console.log(res);
-              // 将用户信息存储到vuex中方便共享
-              _t.$store.commit('SAVE_USER', {
-                user: user,
-              });
-              // 缓存到localstorage中
-              _t.$store.dispatch("SAVE_USER_CACHE");
-              // 跳转到index页
-              _t.$router.push("/index");
+              localStorage.setItem('token', res)
+              getManagerWithToken(res => {
+                localStorage.setItem('userName', res.username)
+              })
+              // let user = {
+              //   token: res
+              // };
+              // // console.log(res);
+              // // 将用户信息存储到vuex中方便共享
+              // this.$store.commit('SAVE_USER', {
+              //   user: user,
+              // });
+              // // 缓存到localstorage中
+              // this.$store.dispatch("SAVE_USER_CACHE");
+              // // 跳转到index页
+              this.$router.push("/index");
             })
           }
         });

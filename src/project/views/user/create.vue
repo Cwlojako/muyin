@@ -16,7 +16,7 @@
         <upload
           @on-transport-file-list="handleTransportFileList"
           :max-size="5120"
-          :limit="3"
+          :limit="1"
         >
         </upload>
       </el-form-item>
@@ -31,7 +31,7 @@
 <script>
   import Upload from "@/framework/components/upload";
   import emitter from '@/framework/mixins/emitter'
-  import {save} from '@/project/service/manager'
+  import { save } from '@/project/service/user'
 
   export default {
     name: "createRoleDialog",
@@ -56,19 +56,19 @@
             {required: true, message: "昵称不能为空", trigger: "blur"}
           ]
         },
-        model:'manager',
+        model: 'user',
         formValidate: {
-          status: '启用',
           nickname: '',
-          phone: ''
+          phone: '',
+          avatar: ''
         }
       }
     },
-    computed: {},
     methods: {
       handleClose() {
         this.$refs.formValidate.resetFields();
         this.$emit('on-dialog-close');
+        this.broadcast('SiUpload', 'on-close', () => {});
       },
 
       handleConfirm(name) {
@@ -76,22 +76,24 @@
         this.broadcast('SiUpload', 'on-form-submit', () => {});
         this.$nextTick(() => {
           this.$refs[name].validate(valid => {
-            if (valid) {
-              save(
-                {[this.model]:this.formValidate},
-                res => {
-                  this.$message.success('添加成功');
-                  this.$refs.formValidate.resetFields();
-                  this.$emit('on-save-success');
-                })
-            }
+            if (!valid) return false
+            save(
+              {[this.model]: this.formValidate},
+              res => {
+                this.$message.success('添加成功');
+                this.handleClose();
+                this.$emit('refreshData');
+            })
           })
         });
       },
-
       handleTransportFileList(fileList) {
-        console.log(fileList)
-        this.formValidate.avatar = fileList[0].response.data;
+        this.$refs.formValidate.validate(valid => {
+          if (!valid) return false
+          console.log(fileList)
+          this.formValidate.avatar = fileList[0].response.data;
+        })
+        
       }
     }
   }

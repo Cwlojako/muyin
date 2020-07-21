@@ -5,15 +5,10 @@ Vue.use(Vuex);
 const initPageState = () => {
   return {
     user: {
-      id: 0,
-      menus: [],
-      nickname: "",
-      permissions: [],
-      realname: "",
       token: "",
-      username: ""
+      userName: ""
     },
-    prefix:'http://47.107.184.144/attachment/',
+    prefix:'http://8.129.170.69/attachment/',
   };
 };
 const store = new Vuex.Store({
@@ -24,6 +19,9 @@ const store = new Vuex.Store({
       for (const prop in pageState) {
         state[prop] = pageState[prop];
       }
+    },
+    SAVE_USERNAME(state, userName) {
+      state.user.userName = userName
     }
   },
   actions: {

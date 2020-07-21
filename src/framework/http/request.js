@@ -6,7 +6,6 @@ export function post(url, param, callback) {
             // callback when data is exist
             callback(data)
         }
-      console.log(data);
     })
 }
 

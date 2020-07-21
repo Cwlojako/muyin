@@ -24,23 +24,24 @@ instance.interceptors.request.use(
   //   return request;
   // },
   config => {
+    if (localStorage.getItem('token')) {
+      config.headers['Access-Token'] = localStorage.getItem('token');
+    }
     // console.log(store.state.user.token)
     // if token exist, add Access-Token to request header
-    if (store.state.user.token) {
-      config.headers['Access-Token'] = store.state.user.token;
-      config.headers['id'] = store.state.user.id;
-    } else {
-      let result = store.dispatch("GET_USER_EXIST");
-      result.then((flag) => {
-        if (flag) {
-          store.dispatch("GET_USER_CACHE");
-          if (store.state.user.token) {
-            config.headers['Access-Token'] = store.state.user.token;
-            config.headers['id'] = store.state.user.id;
-          }
-        }
-      })
-    }
+    // if (store.state.user.token) {
+    //   config.headers['Access-Token'] = store.state.user.token;
+    // } else {
+    //   let result = store.dispatch("GET_USER_EXIST");
+    //   result.then((flag) => {
+    //     if (flag) {
+    //       store.dispatch("GET_USER_CACHE");
+    //       if (store.state.user.token) {
+    //         config.headers['Access-Token'] = store.state.user.token;
+    //       }
+    //     }
+    //   })
+    // }
     // change data to formData
     // let keys = Object.keys(config.data);
     // let formData = new FormData();

@@ -20,7 +20,7 @@
         </el-avatar>
         <el-dropdown @command="handleClick" v-if="$route.path !== '/login'">
            <span class="el-dropdown-link" style="font-size: 12px">
-             {{store.user.username || '管理员'}}
+             {{userName}}
             </span>
           <el-dropdown-menu slot="dropdown">
             <el-dropdown-item icon="el-icon-edit" command="editPsd">修改密码</el-dropdown-item>
@@ -76,6 +76,7 @@ export default {
       }
     };
    return{
+     userName: localStorage.getItem('userName'),
      projectName: '母婴后台',
      selectValue:'',
      language:'中文',

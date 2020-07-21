@@ -21,16 +21,16 @@
             <el-dropdown-item
               icon="el-icon-circle-check"
               command="启用"
-              :disabled="selectList.findIndex(s=>{return s.enabled}) >=0 || selectList.length === 0"
-              :style="(selectList.findIndex(s=>{return s.enabled}) >=0 || selectList.length === 0)?{'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}"
+              :disabled="selectList.some(item => item.enabled)"
+              :style="selectList.some(item => item.enabled)?{'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}"
             >
               启用
             </el-dropdown-item>
             <el-dropdown-item
               icon="el-icon-circle-close"
               command="禁用"
-              :disabled="selectList.findIndex(s=>{return !s.enabled}) >=0 || selectList.length === 0"
-              :style="(selectList.findIndex(s=>{return !s.enabled}) >=0 || selectList.length === 0)?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}"
+              :disabled="selectList.some(item => !item.enabled)"
+              :style="selectList.some(item => !item.enabled)?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}"
             >
               禁用
             </el-dropdown-item>
