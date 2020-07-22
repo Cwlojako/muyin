@@ -1,5 +1,5 @@
 import axios from '@/framework/http/axios'
-// 孕育咨询
+// 孕育资讯
 const model = 'article';
 let searchUrl = `api/${model}/search`;
 let countUrl = `api/${model}/count`;
@@ -7,6 +7,7 @@ let getUrl = `api/${model}/get`;
 let updateEnableUrl = `api/${model}/updateEnable`;
 let batchUpdateEnableUrl = `api/${model}/batchUpdateEnable`;
 let updateUrl = `api/${model}/update`;
+let saveUrl = `api/${model}/save`;
 
 export function search(param, callback) {
   axios.post(searchUrl, param).then(data => {
@@ -63,4 +64,14 @@ export function update(param, callback) {
         callback(data)
         }
     })
+}
+
+// 新增资讯
+export function save(param, callback) {
+  axios.post(saveUrl, param).then(data => {
+      if (data !== undefined && data !== '' && data !== null) {
+      // callback when data is exist
+      callback(data)
+      }
+  })
 }

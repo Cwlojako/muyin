@@ -1,19 +1,20 @@
 import axios from '@/framework/http/axios'
 // 评论
 const model = 'comment';
-let findByPostAndUserUrl = `api/${model}/findByPostAndUser`;
-let countByPostAndUserUrl = `api/${model}/countByPostAndUser`;
+let findByPostAndArticleUrl = `api/${model}/findByPostAndArticle`;
+let countByPostAndArticleUrl = `api/${model}/countByPostAndArticle`;
 
-export function findByPostAndUser(param, callback) {
-  axios.post(findByPostAndUserUrl, param).then(data => {
+// 查询资讯文章评论
+export function findByPostAndArticle(param, callback) {
+  axios.post(findByPostAndArticleUrl, param).then(data => {
     if (data !== undefined && data !== '' && data !== null) {
       callback(data)
     }
   })
 }
 
-export function countByPostAndUser(param, callback) {
-    axios.post(countByPostAndUserUrl, param).then(data => {
+export function countByPostAndArticle(param, callback) {
+    axios.post(countByPostAndArticleUrl, param).then(data => {
       if (data !== undefined && data !== '' && data !== null) {
         callback(data)
       }

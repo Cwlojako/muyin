@@ -30,7 +30,7 @@
           {{articleData.enabled ? '启用' : '禁用'}}
         </div>
         <div class="text-item">
-          <span class="text_label">创建时间：</span>
+          <span class="text_label">更新时间：</span>
           {{articleData.createTime}}
         </div>
         <div class="text-item">
@@ -47,7 +47,7 @@
         </div>
         <div class="text-item">
           <span class="text_label">评论数：</span>
-          {{articleData.commentNum}}
+          {{commentData.length}}
         </div>
       </el-card>
     </el-col>
@@ -63,7 +63,9 @@
         </div>
         <div class='detail-title'>
           <span class='title'>文章内容：</span>
-          <span class='content' v-html='articleData.content'></span>
+          <div class='content-wrapper'>
+            <div v-html='articleData.content'></div>
+          </div>
         </div>
       </el-card>
     </el-col>
@@ -93,12 +95,16 @@
           <el-table :data="commentData">
             <el-table-column prop="phone" label="评论人手机号"></el-table-column>
             <el-table-column prop="name" label="评论人姓名"></el-table-column>
-            <el-table-column sortable prop="createAt" label="评论时间"></el-table-column>
+            <el-table-column sortable prop="createTime" label="评论时间"></el-table-column>
             <el-table-column prop="content" label="评论内容"></el-table-column>
-            <el-table-column prop="status" label="状态"></el-table-column>
+            <el-table-column prop="enabled" label="状态">
+              <template slot-scope="scope">
+                {{scope.row.enabled ? '启用' : '禁用'}}
+              </template>
+            </el-table-column>
             <el-table-column fixed="right" align="center" label="操作" width="200">
               <template slot-scope="scope">
-                <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.status.indexOf('启用') >= 0 ? '禁用' : '启用'}}</el-button>
+                <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.enabled ? '禁用' : '启用'}}</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -117,6 +123,7 @@
 
 <script>
   import { get, updateEnable }  from '@/project/service/article'
+  import { findByPostAndArticle, countByPostAndArticle } from '@/project/service/comment'
   import iEdit from './edit'
   export default {
     data() {
@@ -139,12 +146,39 @@
     },
     created() {
       this.getById();
+      this.getCommentById(1)
     },
     methods: {
       getById() {
         get({id: this.id}, res => {
           this.articleData = res;
         });
+      },
+      getCommentById(page) {
+        let param = {
+          article: {
+            id: this.id
+          },
+          pageable: {
+            page: page,
+            size: this.pageSize
+          }
+        }
+        findByPostAndArticle(param, res => {
+          this.commentData = res
+          this.getTotal()
+        })
+      },
+      // 获取数据总条数
+      getTotal() {
+        let param = {
+          article: {
+            id: this.id
+          }
+        }
+        countByPostAndArticle(param, res => {
+          this.total = res
+        })
       },
       handleClick(command){
         switch (command) {
@@ -196,5 +230,13 @@
 <style lang="less" scoped>
 .detail-title {
   margin: 5px 0;
+  .content-wrapper {
+    padding: 10px;
+    /deep/img {
+      display: block;
+      // width: 100%;
+      margin: 5px 0;
+    }
+  }
 }
 </style>

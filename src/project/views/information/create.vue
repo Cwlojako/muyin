@@ -21,15 +21,12 @@
 </template>
 
 <script>
-  import Upload from "@/framework/components/upload";
   import Editor from "@/framework/components/editor"
-  import { save } from '@/project/service/page' //接口
-  import Emitter from '@/framework/mixins/emitter'
+  import { save } from '@/project/service/article'
 
   export default {
-    mixins: [Emitter],
     components: {
-      Upload, Editor
+      Editor
     },
     props: {
       dialogVisible: {
@@ -44,7 +41,8 @@
     data() {
       return {
         formValidate: {
-          label:'help'
+          title: '',
+          content: ''
         },
         ruleValidate: {
           title: [{required: true, message: '标题不能为空', trigger: 'blur'}]

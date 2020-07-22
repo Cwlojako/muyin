@@ -34,7 +34,7 @@
           {{postData.createTime}}
         </div>
         <div class="text-item">
-          <span class="text_label">评论数：{{commentArr.length}}</span>
+          <span class="text_label">评论数：{{commentData.length}}</span>
         </div>
       </el-card>
     </el-col>
@@ -86,18 +86,18 @@
           </div>
         </el-col>
         <el-col :span="24" class="detail-bottom-table">
-          <el-table :data="commentArr" style="width: 95%;margin: 10px auto;">
+          <el-table :data="commentData" style="width: 95%;margin: 10px auto;">
             <el-table-column prop="type" label="评论类型"></el-table-column>
             <el-table-column prop="user.phone" label="评论人手机号"></el-table-column>
             <el-table-column prop="user.nickname" label="评论人姓名"></el-table-column>
             <el-table-column label="回复对象手机号">
               <template slot-scope="scope">
-                {{scope.row.children.length > 0 ? scope.row.children[0].user.phone : '-'}}
+                {{scope.row.parent ? scope.row.parent.user.phone : '-'}}
               </template>
             </el-table-column>
             <el-table-column label="回复对象姓名">
               <template slot-scope="scope">
-                {{scope.row.children.length > 0 ? scope.row.children[0].user.nickname : '-'}}
+                {{scope.row.parent ? scope.row.parent.user.nickname : '-'}}
               </template>
             </el-table-column>
             <el-table-column sortable prop="createTime" label="评论时间" width='180'></el-table-column>
@@ -135,7 +135,7 @@
 
 <script>
   import { get, updateEnable } from '@/project/service/post'
-  import { findByPostAndUser, countByPostAndUser } from '@/project/service/comment'
+  import { findByPostAndArticle, countByPostAndArticle } from '@/project/service/comment'
   import IEdit from './edit'
   import ICreateComment from './createComment'
   export default {
@@ -156,7 +156,7 @@
           visible: false
         },
         // 评论表格数组
-        commentArr: []
+        commentData: []
       }
     },
     components:{
@@ -192,18 +192,21 @@
             size: this.pageSize
           }
         }
-        findByPostAndUser(param, res => {
-          this.commentArr = this.flatten(res)
+        findByPostAndArticle(param, res => {
+          this.commentData = res
           this.getTotal()
         })
       },
       // 获取数据总条数
       getTotal() {
-        this.total = this.commentArr.length
-      },
-      // 多维数组拍平
-      flatten(arr){
-        return [].concat(...arr.map(item => [].concat(item, ...this.flatten(item.children))))
+        let param = {
+          post: {
+            id: this.id
+          }
+        }
+        countByPostAndArticle(param, res => {
+          this.total = res
+        })
       },
       handleClick(command){
         switch (command) {
