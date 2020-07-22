@@ -11,8 +11,8 @@
     <!--    按钮和分页-->
     <el-col :span="24">
       <div style="width: 95%;margin: 10px auto;">
-        <el-button style="background: rgb(0, 161, 108);border: none" icon="el-icon-plus" type="primary" @click="toCreate">新建
-        </el-button>
+        <!-- <el-button style="background: rgb(0, 161, 108);border: none" icon="el-icon-plus" type="primary" @click="toCreate">新建
+        </el-button> -->
         <el-dropdown :trigger="'click'" @command="handleClick" size="medium" @visible-change="onMenuChange">
           <el-button icon="el-icon-menu" style="background:#3e5265;color: white ">
             更多操作<i class="el-icon-caret-bottom" ref="rotate" style="transition: all .3s;"></i>
@@ -89,17 +89,16 @@
     </el-col>
 
     <!--    新建-->
-    <i-create
+    <!-- <i-create
       :dialog-visible="createProps.visible"
       @on-dialog-close="handleClose"
-      @on-save-success="handleSave"
-    />
+      @refreshData="search(page)"
+    /> -->
 
     <!--    编辑-->
     <i-edit
       :dialog-visible="editProps.visible"
       @on-dialog-close="handleClose"
-      @on-save-success="handleSave"
       :editId="editId"
     />
   </el-row>
@@ -290,17 +289,12 @@
         this.createProps.visible = false;
         this.editProps.visible = false;
       },
-      handleSave() {
-        this.createProps.visible = false;
-        // 重新获取数据
-        this.search(this.page);
-      },
       handleSelectionChange(val) {
         this.selectList = val;
       },
       handleRowClick(row) {
         this.editId = row.id;
-        this.createProps.visible = true;
+        this.editProps.visible = true;
       },
       toDetail(row){
         this.$router.push({path: `show/` + row.id})

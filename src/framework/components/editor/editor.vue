@@ -121,7 +121,6 @@ export default {
         this.$refs.myQuillEditor.quill.insertEmbed(this.content !== null ? this.content.index : 0, 'image', url, Quill.sources.USER)
         console.log(url);
         console.log(this.content);
-
       })
     }
   }
@@ -130,6 +129,14 @@ export default {
 
 <style lang="less">
   #imgInput{
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 100%;
+    min-height: 100%;
+    filter: alpha(opacity=0);
     opacity: 0;
+    cursor: inherit;
+    display: none;
   }
 </style>

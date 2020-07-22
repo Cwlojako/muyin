@@ -97,30 +97,6 @@ export default {
        imageUrl: ''
      }
   },
-  // watch:{
-  //   /**
-  //    * @Description: 修改了请求接口数据后显示不出的情况
-  //    * @author zd Lin
-  //    * @date 2020/3/20
-  //    */
-  //   fileList(val){
-  //     if (val.length > 0) {
-  //       this.defaultList = val.map((s,i) => {
-  //         if (s) {
-  //           let obj = {
-  //             name: s,
-  //             url:this.prefix + s,
-  //             response:{
-  //               data:s
-  //             }
-  //           };
-  //           return obj;
-  //         }
-  //       });
-  //       console.log(this.defaultList, 'watch')
-  //     }
-  //   }
-  // },
   created() {
     if (this.fileList.length > 0) {
       this.defaultList = this.fileList.map((s,i) => {
@@ -135,7 +111,6 @@ export default {
           return obj;
         }
       });
-      console.log(this.defaultList, 'created')
     }
     this.$on("on-form-submit", () => {
       this.$emit("on-transport-file-list", this.defaultList);
@@ -147,18 +122,14 @@ export default {
   },
   methods: {
     handleRemove(file, fileList) {
-      console.log(file);
-      console.log(fileList);
       this.defaultList = JSON.parse(JSON.stringify(fileList));
     },
 
     // 上传成功
     handleSuccess(res,file,fileList) {
-      console.log(fileList)
       // this.defaultList.push(file);
       // 深拷贝
       this.defaultList = JSON.parse(JSON.stringify(fileList));
-      console.log(this.defaultList)
     },
 
     // 预览图片

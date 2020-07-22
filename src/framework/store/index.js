@@ -5,9 +5,9 @@ Vue.use(Vuex);
 const initPageState = () => {
   return {
     user: {
-      token: "",
-      userName: ""
+      token: ""
     },
+    userName: localStorage.getItem('userName'),
     prefix:'http://8.129.170.69/attachment/',
   };
 };
@@ -21,7 +21,8 @@ const store = new Vuex.Store({
       }
     },
     SAVE_USERNAME(state, userName) {
-      state.user.userName = userName
+      console.log(userName)
+      state.userName = userName
     }
   },
   actions: {

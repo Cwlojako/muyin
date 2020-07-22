@@ -7,13 +7,10 @@
     :before-close="handleClose">
     <!--    <div style="overflow: auto;height:40vh;padding: 10px 0 40px;">-->
     <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
-      <el-form-item label="文章位置" prop="position" >
-        <el-input v-model="formValidate.position" placeholder="请输入" :disabled="true"></el-input>
-      </el-form-item>
-      <el-form-item label="文章名称" prop="title">
+      <el-form-item label="文章标题" prop="title">
         <el-input v-model="formValidate.title" placeholder="请输入"></el-input>
       </el-form-item>
-      <el-form-item label="图文详情" prop="content">
+      <el-form-item label="文章内容" prop="content">
         <Editor :defaultContent="formValidate.content" @on-change-content="onChangeEditor"/>
       </el-form-item>
     </el-form>
@@ -28,14 +25,13 @@
 <script>
   import Upload from "@/framework/components/upload";
   import Editor from "@/framework/components/editor"
-  import {get,update} from '@/project/service/page'
+  import {get, update} from '@/project/service/article'
   import Emitter from '@/framework/mixins/emitter'
 
   export default {
     mixins: [Emitter],
-    name: "edit",
     components: {
-      Upload,Editor
+      Upload, Editor
     },
     props: {
       dialogVisible: {
@@ -43,63 +39,44 @@
         default: false,
       },
       editId: {
-        type: Number,
+        type: [String, Number],
         default: 0,
       }
     },
     data() {
       return {
-        categoryList:[],
-        radio: '1',//1是启用的意思
-        show: false,
-
         formValidate: {
+          title: '',
+          content: ''
         },
         ruleValidate: {
-          name: [{required: true, message: '不能为空', trigger: 'blur'}],
+          title: [{required: true, message: '标题不能为空', trigger: 'blur'}],
         },
-
       }
     },
-    computed: {},
     methods: {
       onChangeEditor(val){
-
         this.formValidate.content = val.html;
       },
       handleClose() {
-        // this.visible = false;
         this.$emit('on-dialog-close');
       },
       handleConfirm() {
-        update({page: this.formValidate}, res => {
-          this.$notify.success('修改成功');
-          this.$emit('on-save-success');
+        this.$refs.formValidate.validate(valid => {
+          if (!valid) return false
+          update({article: this.formValidate}, res => {
+            this.$message.success('修改成功');
+            this.$emit('onRefreshData');
+            this.handleClose()
+          })
         })
-
-      },
-      handleTransportFileList(e) {
-        console.log(e)
-        this.formValidate.thumbnail = e[0].response.data
-      },
-      handleTransportFileList2(e) {
-        console.log(e)
-        this.formValidate.blueprint = e[0].response.data
       },
       findById() {
         if (this.editId) {
-          get({id:this.editId},res => {
+          get({id: this.editId}, res => {
             this.formValidate = res;
           })
         }
-
-      },
-    },
-    watch: {
-      dialogVisible(e) {
-        this.show = false
-        if(e){
-          this.findById()}
       }
     },
     created() {

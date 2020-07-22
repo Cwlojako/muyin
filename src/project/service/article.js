@@ -1,12 +1,11 @@
 import axios from '@/framework/http/axios'
-// 论坛文章
-const model = 'post';
+// 孕育咨询
+const model = 'article';
 let searchUrl = `api/${model}/search`;
 let countUrl = `api/${model}/count`;
 let getUrl = `api/${model}/get`;
 let updateEnableUrl = `api/${model}/updateEnable`;
 let batchUpdateEnableUrl = `api/${model}/batchUpdateEnable`;
-let saveUrl = `api/${model}/save`;
 let updateUrl = `api/${model}/update`;
 
 export function search(param, callback) {
@@ -56,22 +55,12 @@ export function batchUpdateEnable(param, callback) {
     })
 }
 
-// 新增论坛文章
-export function save(param, callback) {
-  axios.post(saveUrl, param).then(data => {
-      if (data !== undefined && data !== '' && data !== null) {
-      // callback when data is exist
-      callback(data)
-      }
-  })
-}
-
-// 编辑论坛文章
+// 编辑资讯
 export function update(param, callback) {
-  axios.post(updateUrl, param).then(data => {
-      if (data !== undefined && data !== '' && data !== null) {
-      // callback when data is exist
-      callback(data)
-      }
-  })
+    axios.post(updateUrl, param).then(data => {
+        if (data !== undefined && data !== '' && data !== null) {
+        // callback when data is exist
+        callback(data)
+        }
+    })
 }

@@ -1,6 +1,6 @@
 <template>
   <el-row class="page">
-    <el-col class="welcome" :span="8" :offset="8">欢迎</el-col>
+    <el-col class="welcome" :span="8" :offset="8">欢迎&nbsp;{{$store.state.userName}}</el-col>
   </el-row>
 </template>
 

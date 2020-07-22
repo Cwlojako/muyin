@@ -9,9 +9,10 @@
       <el-form-item label="文章标题" prop="title">
         <el-input v-model="formValidate.title" placeholder="请输入"></el-input>
       </el-form-item>
-      <el-form-item label="封面图" prop="content">
+      <el-form-item label="封面图" prop="cover">
         <upload
-          @on-transport-file-list="handleTransportFileList"
+          @on-transport-file-list="handleTransportCover"
+          :file-list="formValidate.cover ? formValidate.cover.split(';') : []"
           :max-size="5120"
           :limit="1">
         </upload>
@@ -20,9 +21,10 @@
       <el-form-item label="正文" prop="content">
         <el-input type="textarea" v-model="formValidate.content"></el-input>
       </el-form-item>
-      <el-form-item label="正文图片" prop="avatar">
+      <el-form-item label="正文图片" prop="images">
         <upload
-          @on-transport-file-list="handleTransportFileList"
+          @on-transport-file-list="handleTransportImages"
+          :file-list="formValidate.images ? formValidate.images.split(';') : []"
           :max-size="5120"
           :limit="7">
         </upload>
@@ -38,15 +40,13 @@
 
 <script>
   import Upload from "@/framework/components/upload";
-  import Editor from "@/framework/components/editor"
-  import {get,update} from '@/project/service/page'
+  import {get, update} from '@/project/service/post'
   import Emitter from '@/framework/mixins/emitter'
 
   export default {
     mixins: [Emitter],
-    name: "edit",
     components: {
-      Upload,Editor
+      Upload
     },
     props: {
       dialogVisible: {
@@ -54,63 +54,69 @@
         default: false,
       },
       editId: {
-        type: Number,
+        type: [String, Number],
         default: 0,
       }
     },
     data() {
       return {
-        categoryList:[],
-        radio: '1',//1是启用的意思
-        show: false,
-
         formValidate: {
+          title: '',
+          cover: '',
+          content: '',
+          images: ''
         },
         ruleValidate: {
-          name: [{required: true, message: '不能为空', trigger: 'blur'}],
-        },
-
+          title: [{required: true, message: '标题不能为空', trigger: 'blur'}],
+          content: [{required: true, message: '内容不能为空', trigger: 'blur'}],
+        }
       }
     },
-    computed: {},
     methods: {
-      onChangeEditor(val){
-
-        this.formValidate.content = val.html;
-      },
       handleClose() {
-        // this.visible = false;
         this.$emit('on-dialog-close');
       },
       handleConfirm() {
-        update({page: this.formValidate}, res => {
-          this.$notify.success('修改成功');
-          this.$emit('on-save-success');
+        this.broadcast('SiUpload', 'on-form-submit', () => {});
+        this.$nextTick(() => {
+          this.$refs.formValidate.validate(valid => {
+            if (!valid) return false
+            update({post: this.formValidate}, res => {
+              this.$message({
+                type: 'success',
+                message: '编辑成功'
+              });
+              this.$emit('onRefreshData');
+              this.handleClose()
+            })
+          })
         })
-
       },
-      handleTransportFileList(e) {
-        console.log(e)
-        this.formValidate.thumbnail = e[0].response.data
+      handleTransportCover(fileList) {
+        this.formValidate.cover = fileList[0].response.data
       },
-      handleTransportFileList2(e) {
-        console.log(e)
-        this.formValidate.blueprint = e[0].response.data
+      handleTransportImages(fileList) {
+        console.log(fileList)
+        let imageArr = []
+        for(let i = 0; i < fileList.length; i++) {
+          imageArr.push(fileList[i].response.data)
+        }
+        this.formValidate.images = imageArr.join(';')
       },
       findById() {
         if (this.editId) {
-          get({id:this.editId},res => {
+          get({id: this.editId}, res => {
+            console.log(res)
             this.formValidate = res;
           })
         }
-
       },
     },
     watch: {
       dialogVisible(e) {
-        this.show = false
         if(e){
-          this.findById()}
+          this.findById()
+        }
       }
     },
     created() {
@@ -120,5 +126,8 @@
 </script>
 
 <style scoped>
-
+.upload-tip {
+  color: #ccc;
+  font-size: 12px;
+}
 </style>

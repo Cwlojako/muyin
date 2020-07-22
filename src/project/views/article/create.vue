@@ -9,9 +9,9 @@
       <el-form-item label="文章标题" prop="title">
         <el-input v-model="formValidate.title" placeholder="请输入"></el-input>
       </el-form-item>
-      <el-form-item label="封面图" prop="content">
+      <el-form-item label="封面图" prop="cover">
         <upload
-          @on-transport-file-list="handleTransportFileList"
+          @on-transport-file-list="handleTransportCover"
           :max-size="5120"
           :limit="1">
         </upload>
@@ -20,9 +20,9 @@
       <el-form-item label="正文" prop="content">
         <el-input type="textarea" v-model="formValidate.content"></el-input>
       </el-form-item>
-      <el-form-item label="正文图片" prop="avatar">
+      <el-form-item label="正文图片" prop="images">
         <upload
-          @on-transport-file-list="handleTransportFileList"
+          @on-transport-file-list="handleTransportImages"
           :max-size="5120"
           :limit="7">
         </upload>
@@ -38,12 +38,12 @@
 
 <script>
   import Upload from "@/framework/components/upload";
-  import Editor from "@/framework/components/editor"
-
+  import emitter from '@/framework/mixins/emitter'
+  import { save } from '@/project/service/post'
   export default {
-    name: "creat",
+    mixins: [emitter],
     components: {
-      Upload, Editor
+      Upload
     },
     props: {
       dialogVisible: {
@@ -59,50 +59,55 @@
       return {
         show: false,
         formValidate: {
-          label: 'help'
+          title: '',
+          cover: '',
+          content: '',
+          images: ''
         },
         ruleValidate: {
-          title: [{required: true, message: '不能为空', trigger: 'blur'}],
-          position: [{required: true, message: '不能为空', trigger: 'blur'}],
-          content: [{required: true, message: '不能为空', trigger: 'blur'}],
+          title: [{required: true, message: '标题不能为空', trigger: 'blur'}],
+          content: [{required: true, message: '内容不能为空', trigger: 'blur'}],
         },
-        model:'page'
+        model: 'post'
       }
     },
-    computed: {},
     methods: {
-      onChangeEditor(val){
-        this.formValidate.content = val.html;
-      },
       handleClose() {
-        // this.visible = false;
         this.$emit('on-dialog-close');
+        this.broadcast('SiUpload', 'on-close', () => {});
       },
       handleConfirm(name) {
+        this.broadcast('SiUpload', 'on-form-submit', () => {});
         this.$nextTick(() => {
           this.$refs[name].validate(valid => {
-            if (valid) {
-              save({[this.model]:this.formValidate},res => {
-                this.$message.success('添加成功');
-                this.$emit('on-save-success');
-              })
-            }
+            if (!valid) return false
+            save({[this.model]: this.formValidate}, res => {
+              this.$message.success('添加成功');
+              this.handleClose()
+              this.$emit('refreshData');
+            })
           })
         });
 
       },
-      handleTransportFileList(e) {
+      // 封面图
+      handleTransportCover(e) {
         console.log(e)
-        this.formValidate.thumbnail = e[0].response.data
+        this.formValidate.cover = e[0].response.data
       },
-      handleTransportFileList2(e) {
+      // 正文图片
+      handleTransportImages(e) {
         console.log(e)
-        this.formValidate.blueprint = e[0].response.data
-      },
-
-    },
-    created() {
-      // this.findById()
+        if (e.length === 0) {
+          this.formValidate.images = e[0].response.data
+        } else {
+          let imageArr = []
+          for (let i = 0; i < e.length; i++) {
+            imageArr.push(e[i].response.data)
+          }
+          this.formValidate.images = imageArr.join(';')
+        }
+      }
     }
   }
 </script>

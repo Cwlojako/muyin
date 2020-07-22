@@ -8,6 +8,7 @@ let saveUrl = `api/${model}/save`;
 let getUrl = `api/${model}/get`;
 let updateUrl = `api/${model}/update`;
 let getManagerWithTokenUrl = `api/${model}/getManagerWithToken`;
+let updateCommentUrl = `api/${model}/updateComment`;
 
 export function search(param, callback) {
   axios.post(searchUrl, param).then(data => {
@@ -84,6 +85,16 @@ export function update(param, callback) {
 // 根据token获取管理员信息
 export function getManagerWithToken(callback) {
   axios.post(getManagerWithTokenUrl).then(data => {
+    if (data !== undefined && data !== '' && data !== null) {
+      // callback when data is exist
+      callback(data)
+    }
+  })
+}
+
+// 更新备注
+export function updateComment(param, callback) {
+  axios.post(updateCommentUrl, param).then(data => {
     if (data !== undefined && data !== '' && data !== null) {
       // callback when data is exist
       callback(data)

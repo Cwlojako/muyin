@@ -34,19 +34,32 @@
           {{postData.createTime}}
         </div>
         <div class="text-item">
-          <span class="text_label">评论数：</span>
-          
+          <span class="text_label">评论数：{{commentArr.length}}</span>
         </div>
       </el-card>
     </el-col>
     <!--    图文详情-->
-    <el-col :span="18" class='user-detail-right'>
+    <el-col :span="18" class='user-detail-right' ref='detailRight'>
       <el-card class="box-card">
         <div slot="header" class='box-card-header'>
           <span class='box-card-header-left'>文章内容</span>
         </div>
-        <p class='detail-title'>文章标题：{{postData.title}}</p>
-        <p class='detail-title'>文章内容：{{postData.content}}</p>
+        <div class='detail-title'>
+          <span class='title'>文章标题：</span>
+          <span class='content'>{{postData.title}}</span>
+        </div>
+        <div class='detail-title'>
+          <span class='title'>文章内容：</span>
+          <span class='content'>{{postData.content}}</span>
+        </div>
+        <div class='image-wrapper'>
+          <el-image
+            v-for='(item, index) in images'
+            :key='index'
+            :src="$store.state.prefix + item"
+            :fit="'fit'">
+          </el-image>
+        </div>
       </el-card>
     </el-col>
     <!--    评论记录-->
@@ -73,15 +86,27 @@
           </div>
         </el-col>
         <el-col :span="24" class="detail-bottom-table">
-          <el-table :data="data" style="width: 95%;margin: 10px auto;">
+          <el-table :data="commentArr" style="width: 95%;margin: 10px auto;">
             <el-table-column prop="type" label="评论类型"></el-table-column>
-            <el-table-column prop="phone" label="评论人手机号"></el-table-column>
-            <el-table-column prop="name" label="评论人姓名"></el-table-column>
-            <el-table-column prop="name" label="回复对象手机号"></el-table-column>
-            <el-table-column prop="name" label="回复对象姓名"></el-table-column>
-            <el-table-column sortable prop="createAt" label="评论时间"></el-table-column>
+            <el-table-column prop="user.phone" label="评论人手机号"></el-table-column>
+            <el-table-column prop="user.nickname" label="评论人姓名"></el-table-column>
+            <el-table-column label="回复对象手机号">
+              <template slot-scope="scope">
+                {{scope.row.children.length > 0 ? scope.row.children[0].user.phone : '-'}}
+              </template>
+            </el-table-column>
+            <el-table-column label="回复对象姓名">
+              <template slot-scope="scope">
+                {{scope.row.children.length > 0 ? scope.row.children[0].user.nickname : '-'}}
+              </template>
+            </el-table-column>
+            <el-table-column sortable prop="createTime" label="评论时间" width='180'></el-table-column>
             <el-table-column prop="content" label="评论内容"></el-table-column>
-            <el-table-column prop="status" label="状态"></el-table-column>
+            <el-table-column prop="enabled" label="状态">
+              <template slot-scope="scope">
+                {{scope.row.enabled ? '启用' : '禁用'}}
+              </template>
+            </el-table-column>
             <el-table-column fixed="right" align="center" label="操作" width="200">
               <template slot-scope="scope">
                 <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.enabled ? '禁用' : '启用'}}</el-button>
@@ -95,7 +120,8 @@
     <i-edit
       :dialog-visible="editProps.visible"
       @on-dialog-close="handleClose"
-      @on-save-success="handleSave"
+      @onRefreshData="getById"
+      :editId='id'
     />
 
     <!--    添加评论弹框-->
@@ -109,6 +135,7 @@
 
 <script>
   import { get, updateEnable } from '@/project/service/post'
+  import { findByPostAndUser, countByPostAndUser } from '@/project/service/comment'
   import IEdit from './edit'
   import ICreateComment from './createComment'
   export default {
@@ -136,22 +163,47 @@
       IEdit, ICreateComment
     },
     created() {
-      this.getById();
+      // 获取文章详情
+      this.getById()
+      // 根据文章id获取评论
+      this.getCommentById(1)
+    },
+    computed: {
+      images() {
+        if (this.postData.images) {
+          return this.postData.images.split(';')
+        }
+        return []
+      }
     },
     methods: {
-      send() {
-        updateComment({storeId: this.id,comment:this.textarea}, res => {
-          this.$message({
-            type: 'success',
-            message: '已提交!'
-          });
-          this.getById();
-        });
-      },
       getById() {
         get({id: this.id}, res => {
           this.postData = res;
         })
+      },
+      getCommentById(page) {
+        let param = {
+          post: {
+            id: this.id
+          },
+          pageable: {
+            page: page,
+            size: this.pageSize
+          }
+        }
+        findByPostAndUser(param, res => {
+          this.commentArr = this.flatten(res)
+          this.getTotal()
+        })
+      },
+      // 获取数据总条数
+      getTotal() {
+        this.total = this.commentArr.length
+      },
+      // 多维数组拍平
+      flatten(arr){
+        return [].concat(...arr.map(item => [].concat(item, ...this.flatten(item.children))))
       },
       handleClick(command){
         switch (command) {
@@ -186,31 +238,6 @@
           this.getById();
         })
       },
-      search(page) {
-        let _t = this;
-        _t.page = page;
-        let param = {
-          pageable: {
-            page: page,
-            size: _t.pageSize,
-          },
-          [this.model]: _t.extraParam
-        }
-        // 调用接口 查询数据
-        search(param, res => {
-          console.log(res)
-          _t.data = res;
-          _t.getTotal();
-        });
-      },
-      // 获取数据总条数
-      getTotal() {
-        let _t = this;
-        let param = {[this.model]: _t.extraParam};
-        count(param, res => {
-          _t.total = parseInt(res);
-        });
-      },
       handleClose(){
         this.editProps.visible = false
         this.createProps.visible = false
@@ -221,11 +248,11 @@
       },
       handleCurrentChange(val) {
         this.page = val;
-        this.search(this.page);
+        this.getCommentById(this.page)
       },
       handleSizeChange(pageSize) {
         this.pageSize = pageSize;
-        this.search(this.page);
+        this.getCommentById(this.page);
       },
       // 添加评论弹框
       toCreate() {
@@ -238,4 +265,15 @@
 .detail-title {
   margin: 5px 0;
 }
+.image-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  .el-image {
+    box-sizing: border-box;
+    padding: 5px;
+    flex: 0 0 33.33%;
+    width: 33.33%;
+  }
+}
+
 </style>

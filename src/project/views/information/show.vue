@@ -12,34 +12,42 @@
             </el-button>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item command="编辑">编辑</el-dropdown-item>
-              <el-dropdown-item command="启用">启用</el-dropdown-item>
-              <el-dropdown-item command="禁用">禁用</el-dropdown-item>
+              <el-dropdown-item command="启用"
+                :disabled="articleData.enabled"
+                :style="articleData.enabled ? {'color':'rgba(255,255,255,0.4)'} : {'color':'#fff'}">
+                  启用
+              </el-dropdown-item>
+              <el-dropdown-item command="禁用" 
+                :disabled="!articleData.enabled"
+                :style="!articleData.enabled ? {'color':'rgba(255,255,255,0.4)'} : {'color':'#fff'}">
+                  禁用
+              </el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </div>
         <div class="text-item">
           <span class="text_label">状态：</span>
-          {{page.status}}
+          {{articleData.enabled ? '启用' : '禁用'}}
         </div>
         <div class="text-item">
-          <span class="text_label">更新时间：</span>
-          {{page.updateAt}}
+          <span class="text_label">创建时间：</span>
+          {{articleData.createTime}}
         </div>
         <div class="text-item">
           <span class="text_label">浏览数：</span>
-          {{page.viewNum}}
+          {{articleData.viewQuantity}}
         </div>
         <div class="text-item">
           <span class="text_label">收藏数：</span>
-          {{page.collectNum}}
+          {{articleData.favoriteQuantity}}
         </div>
         <div class="text-item">
           <span class="text_label">分享次数：</span>
-          {{page.shareNum}}
+          {{articleData.shareQuantity}}
         </div>
         <div class="text-item">
           <span class="text_label">评论数：</span>
-          {{page.commentNum}}
+          {{articleData.commentNum}}
         </div>
       </el-card>
     </el-col>
@@ -49,7 +57,14 @@
         <div slot="header" class='box-card-header'>
           <span class='box-card-header-left'>文章内容</span>
         </div>
-        <div v-html="page.content"></div>
+        <div class='detail-title'>
+          <span class='title'>文章标题：</span>
+          <span class='content'>{{articleData.title}}</span>
+        </div>
+        <div class='detail-title'>
+          <span class='title'>文章内容：</span>
+          <span class='content' v-html='articleData.content'></span>
+        </div>
       </el-card>
     </el-col>
     <!--    评论记录-->
@@ -75,7 +90,7 @@
           </div>
         </el-col>
         <el-col :span="24" class="detail-bottom-table">
-          <el-table :data="data">
+          <el-table :data="commentData">
             <el-table-column prop="phone" label="评论人手机号"></el-table-column>
             <el-table-column prop="name" label="评论人姓名"></el-table-column>
             <el-table-column sortable prop="createAt" label="评论时间"></el-table-column>
@@ -94,28 +109,23 @@
     <i-edit
       :dialog-visible="editProps.visible"
       @on-dialog-close="handleClose"
-      @on-save-success="handleSave"
-      :editId="editId"
+      @onRefreshData="getById"
+      :editId="id"
     />
   </div>
 </template>
 
 <script>
-  import {get} from '@/project/service/page'
-  import { search, count }  from '@/project/service/manager'
+  import { get, updateEnable }  from '@/project/service/article'
   import iEdit from './edit'
   export default {
-    name: "show",
     data() {
       return {
-        model: 'manager',
-        data: [],
-        extraParam: {},
+        model: 'article',
         textarea:'',
-        page: {},
+        commentData: [],
+        articleData: {},
         id: this.$route.params.id,
-        editId: parseInt(this.$route.params.id),
-        activeName: 'first',
         editProps:{
           visible:false
         },
@@ -128,24 +138,12 @@
       iEdit
     },
     created() {
-      this.findById();
-      this.search(1)
+      this.getById();
     },
-
     methods: {
-      send() {
-        updateComment({storeId: this.id,comment:this.textarea}, res => {
-          this.$message({
-            type: 'success',
-            message: '已提交!'
-          });
-          this.findById();
-        });
-      },
-      findById() {
+      getById() {
         get({id: this.id}, res => {
-          console.log(res)
-          this.page = res;
+          this.articleData = res;
         });
       },
       handleClick(command){
@@ -153,43 +151,37 @@
           case '编辑':
             this.editProps.visible = true;
             break;
+          case '启用':
+            this.updateEnable()
+            break;
+          case '禁用':
+            this.updateDisable()
+            break;
         }
       },
-      search(page) {
-        let _t = this;
-        _t.page = page;
-        let param = {
-          pageable: {
-            page: page,
-            size: _t.pageSize,
-          },
-          [this.model]: _t.extraParam
-        }
-        // 调用接口 查询数据
-        search(param, res => {
-          console.log(res)
-          _t.data = res;
-          _t.getTotal();
-        });
+      // 启用文章
+      updateEnable() {
+        updateEnable({id: this.id, enable: true}, res => {
+          this.$message({
+            type: 'success',
+            message: '已启用!'
+          });
+          this.getById();
+        })
       },
-      // 获取数据总条数
-      getTotal() {
-        let _t = this;
-        let param = {[this.model]: _t.extraParam};
-        count(param, res => {
-          _t.total = parseInt(res);
-        });
+      // 禁用文章
+      updateDisable() {
+        updateEnable({id: this.id, enable: false}, res => {
+          this.$message({
+            type: 'success',
+            message: '已禁用!'
+          });
+          this.getById();
+        })
       },
-
-      handleStatusChange() {},
       handleClose(){
         this.editProps.visible = false
       },
-      handleSave(){
-        this.findById();
-        this.handleClose();
-      },
-
       handleCurrentChange(val) {
         this.page = val;
         this.search(this.page);
@@ -202,44 +194,7 @@
   }
 </script>
 <style lang="less" scoped>
-  .user-detail {
-    width:100%;
-    height:100%;
-    padding: 20px;
-    box-sizing: border-box;
-    .user-detail-left {
-      padding-right: 10px;
-      box-sizing: border-box;
-      .box-card {
-        height: 600px;
-        margin-bottom: 10px;
-        .box-card-header-right {
-          float: right;
-        }
-        .text-item {
-          padding: 5px 0;
-        }
-        .text-item-avatar {
-          display: flex;
-          align-items: center;
-        }
-      }
-    }
-    .user-detail-right {
-      .box-card {
-        height: 600px;
-      }
-      .tabel-data {
-        margin-top: 5px;
-      }
-    }
-    .detail-bottom {
-      .detail-bottom-table {
-        margin-bottom: 100px;
-      }
-    }
-  }
-  .el-card/deep/.el-card__header {
-    padding: 10px 18px;
-  }
+.detail-title {
+  margin: 5px 0;
+}
 </style>

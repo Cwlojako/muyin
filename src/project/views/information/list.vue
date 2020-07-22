@@ -14,7 +14,9 @@
         <el-button style="background: rgb(0, 161, 108);border: none" icon="el-icon-plus" type="primary" @click="toCreate">新建
         </el-button>
         <el-dropdown :trigger="'click'" @command="handleClick" size="medium" @visible-change="onMenuChange">
-          <el-button icon="el-icon-menu" style="background:#3e5265;color: white ">更多操作<i :class="menu.visible?'el-icon-caret-top':'el-icon-caret-bottom'"></i></el-button>
+          <el-button icon="el-icon-menu" style="background:#3e5265;color: white">
+            更多操作<i class="el-icon-caret-bottom" ref="rotate" style="transition: all .3s;"></i>
+          </el-button>
           <el-dropdown-menu slot="dropdown">
             <el-dropdown-item
               icon="el-icon-edit"
@@ -22,6 +24,20 @@
               :disabled="selectList.length !== 1"
               :style="(selectList.length !== 1)?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}">
               编辑
+            </el-dropdown-item>
+            <el-dropdown-item
+              icon="el-icon-circle-check"
+              command="启用"
+              :disabled="selectList.some(item => item.enabled)"
+              :style="selectList.some(item => item.enabled)?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}">
+              启用
+            </el-dropdown-item>
+            <el-dropdown-item
+              icon="el-icon-circle-close"
+              command="禁用"
+              :disabled="selectList.some(item => !item.enabled)"
+              :style="selectList.some(item => !item.enabled)?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}">
+              禁用
             </el-dropdown-item>
           </el-dropdown-menu>
         </el-dropdown>
@@ -44,8 +60,7 @@
         :data="data"
         style="width: 95%;margin:0 auto;"
         @selection-change="handleSelectionChange"
-        @row-dblclick="handleRowClick"
-        @sort-change="handleSortChange">
+        @row-dblclick="handleRowClick">
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column label="文章标题">
           <template slot-scope="scope">
@@ -57,8 +72,17 @@
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column prop="position" label="文章位置"></el-table-column>
-        <el-table-column sortable="custom" prop="updateAt" label="更新时间"></el-table-column>
+        <el-table-column sortable prop="createTime" label="创建时间"></el-table-column>
+        <el-table-column label="操作">
+          <template slot-scope="scope">
+            <el-button
+              @click.native.prevent="handleStatusChange(scope.row)"
+              type="text"
+              size="small">
+              {{scope.row.enabled ? '禁用' : '启用'}}
+            </el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </el-col>
 
@@ -76,43 +100,29 @@
       @on-save-success="handleSave"
       :editId="editId"
     />
-    <!--    &lt;!&ndash;    编辑&ndash;&gt;-->
-    <!--    <i-edit-->
-    <!--      :dialog-visible="editProps.visible"-->
-    <!--      :edit-id="editId"-->
-    <!--      @on-dialog-close="handleClose"-->
-    <!--    />-->
   </el-row>
 </template>
 <script>
   import Search from "@/framework/components/search";
   import IEdit from "./edit"
   import ICreate from "./create"
-  import {post} from "@/framework/http/request";
   import Emitter from '@/framework/mixins/emitter'
-  import {search, count, del} from '@/project/service/page' //接口
+  import {search, count, updateEnable, batchUpdateEnable} from '@/project/service/article'
 
   export default {
-    name:'commodityAudit',
     mixins: [Emitter],
     data() {
       return {
-        categoryListName:[],
-        categoryListId:[],
-        model: "page",
+        model: "article",
         createProps: {
           visible: false
         },
         editProps: {
           visible: false
         },
-        menu: {
-          visible: false
-        },
         editId: 0,//编辑id
         data: [],
         selectList: [],
-        sort: { desc: ['id']},
         pageSize: 10,
         page: 1,
         total: 0,
@@ -129,60 +139,48 @@
             type: "string",
           },
           {
-            name: "更新时间",
-            key: "updateAt",
+            name: "创建时间",
+            key: "createTime",
             type: "datetimerange"
           },
           {
             name: "状态",
-            key: "status",
+            key: "enabled",
             type: "select",
             displayValue: ["禁用", "启用"],
             value: ["禁用", "启用"]
           }
-        ]
+        ],
+        // 时间范围搜索条件
+        createTimeParam: {},
       };
-    },
-    // created() {
-    //   this.search(1);
-    // },
-    computed: {
-      route() {
-        return this.$route;
-      }
     },
     components: {
       Search, IEdit, ICreate
     },
     methods: {
       handleStatusChange(row) {
-        let status;
-        let _t = this;
-        if (row.status.indexOf('启用') >= 0) {
-          status = '禁用'
-        } else {
-          status = '启用'
-        }
+        let status = row.enabled ? '禁用' : '启用'
         this.$confirm(`确定${status}选中内容？`, '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
           if (status === '禁用') {
-            disable({id: row.id}, res => {
-              _t.$message({
+            updateEnable({id: row.id, enable: false}, res => {
+              this.$message({
                 type: 'success',
                 message: '已禁用!'
               });
-              _t.search(_t.page);
+              this.search(this.page);
             })
           } else {
-            enable({id: row.id}, res => {
-              _t.$message({
+            updateEnable({id: row.id, enable: true}, res => {
+              this.$message({
                 type: 'success',
                 message: '已启用!'
               });
-              _t.search(_t.page);
+              this.search(this.page);
             })
           }
         }).catch(() => {
@@ -191,27 +189,6 @@
             message: '已取消删除'
           });
         });
-
-      },
-      handlePageSizeChange(pageSize) {
-        this.pageSize = pageSize;
-        this.search(1);
-      },
-      handlePageChange(page) {
-        this.search(page);
-      },
-      handleSortChange(sort) {
-        let order = sort.order;
-        if (order === 'ascending'){
-          this.sort = {
-            asc:[sort.prop]
-          }
-        } else {
-          this.sort = {
-            desc:[sort.prop]
-          }
-        }
-        this.search(1);
       },
       searchBySearchItem(searchItems) {
         let keys = [];
@@ -227,75 +204,74 @@
         for (let i in keys) {
           if (searchItems[keys[i]]) {
             this.extraParam[keys[i]] = searchItems[keys[i]];
+            if (keys[i] === 'createTime') delete this.extraParam[keys[i]]
+            // 处理状态参数
+            if (keys[i] === 'enabled') {
+              this.extraParam[keys[i]] = searchItems[keys[i]] === '启用'
+            }
           } else {
             delete this.extraParam[keys[i]];
           }
         }
-        //有时间段搜索进行转化字段
-        if (this.extraParam.updateAt) {
-          this.extraParam.startUpdateAt = this.extraParam.updateAt[0];
-          this.extraParam.endUpdateAt = this.extraParam.updateAt[1];
-          delete this.extraParam.updateAt;
-        }else {
-          delete this.extraParam.startUpdateAt;
-          delete this.extraParam.endUpdateAt;
+        // 处理创建时间参数
+        if (searchItems.createTime) {
+          this.createTimeParam = {
+            'start': searchItems.createTime[0],
+            'end': searchItems.createTime[1]
+          }
+        } else {
+          delete this.createTimeParam
         }
         this.search(1);
       },
       search(page) {
-        let _t = this;
-        _t.page = page;
-        _t.extraParam.label = 'system'
+        this.page = page;
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
+            size: this.pageSize,
+            asc: 'id'
           },
-          [this.model]: _t.extraParam
+          [this.model]: this.extraParam,
+          createTime: this.createTimeParam
         };
-
+        // 如果参数不需要则清除
+        if (JSON.stringify(param.createTime) === "{}") delete param.createTime
         search(param, res => {
-          let data = res;
-          _t.data = data;
-          _t.getTotal();
+          this.data = res;
+          this.getTotal();
         });
       },
       getTotal() {
-        let _t = this;
         let param = {
-          page:{}
-        };
-        for (let key in _t.extraParam) {
-          param.page[key]=_t.extraParam[key];
+          [this.model]: this.extraParam,
+          createTime: this.createTimeParam
         }
+        // 如果参数不需要则清除
+        if (JSON.stringify(param.createTime) === "{}") delete param.createTime
         count(param, res => {
-          _t.total = parseInt(res);
+          this.total = parseInt(res);
         });
       },
-      handleTransportSelectList(list) {
-        this.selectList = list;
-      },
-
       //批量启用
       batchEnable() {
-        let _t = this;
         let selectList = this.selectList;
+        let idList = []
+        this.selectList.forEach(item => {
+          idList.push(item.id)
+        })
         this.$confirm('确定启用所选的记录吗?', '启用提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
-          selectList.map(s => {
-            enable({id: s.id}, res => {
-              _t.search(_t.page);
-              // this.$message({
-              //   type: 'success',
-              //   message: '删除成功!'
-              // });
-            })
+          batchUpdateEnable({idList, enable: true}, res => {
+            this.search(1)
+            this.$message({
+              type: 'success',
+              message: '启用成功!'
+            });
           })
-
         }).catch(() => {
           this.$message({
             type: 'info',
@@ -305,41 +281,28 @@
       },
       //批量禁用
       batchDisable() {
-        let _t = this;
         let selectList = this.selectList;
-        this.$confirm('确定禁用所选的记录吗?', '启用提示', {
+        let idList = []
+        this.selectList.forEach(item => {
+          idList.push(item.id)
+        })
+        this.$confirm('确定禁用所选的记录吗?', '禁用提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
-          selectList.map(s => {
-            disable({id: s.id}, res => {
-              _t.search(_t.page);
-              // this.$message({
-              //   type: 'success',
-              //   message: '删除成功!'
-              // });
-            })
+          batchUpdateEnable({idList, enable: false}, res => {
+            this.search(1)
+            this.$message({
+              type: 'success',
+              message: '禁用成功!'
+            });
           })
-
         }).catch(() => {
           this.$message({
             type: 'info',
             message: '已取消'
           });
-        });
-      },
-
-      delete(id) {
-        let _t = this;
-        del({id: id}, res => {
-          _t.search(_t.page);
-        });
-      },
-      enable(id, url) {
-        let _t = this;
-        post(url, {id: id}, res => {
-          _t.search(_t.page);
         });
       },
       handleClose() {
@@ -355,7 +318,6 @@
         this.selectList = val;
       },
       handleRowClick(row) {
-        // print(this.id);
         this.editId = row.id;
         this.createProps.visible = true;
       },
@@ -374,15 +336,17 @@
         this.pageSize = pageSize;
         this.search(this.page);
       },
-      onMenuChange(val) {
-        console.log(val);
-      },
       handleClick(command) {
         switch (command) {
           case '编辑':
-            console.log(this.selectList[0].id)
             this.editId = this.selectList[0].id;
             this.editProps.visible = true;
+            break;
+          case '启用':
+            this.batchEnable()
+            break;
+          case '禁用':
+            this.batchDisable()
             break;
         }
       }

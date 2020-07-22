@@ -58,6 +58,8 @@
               localStorage.setItem('token', res)
               getManagerWithToken(res => {
                 localStorage.setItem('userName', res.username)
+                this.$store.commit('SAVE_USERNAME', res.username)
+                this.$router.push("/index");
               })
               // let user = {
               //   token: res
@@ -70,7 +72,6 @@
               // // 缓存到localstorage中
               // this.$store.dispatch("SAVE_USER_CACHE");
               // // 跳转到index页
-              this.$router.push("/index");
             })
           }
         });

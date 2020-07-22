@@ -159,7 +159,7 @@
 </template>
 
 <script>
-  import {get, enable, disable, update} from '@/project/service/user'
+  import {get, enable, disable, update, updateComment} from '@/project/service/user'
   import search from '@/framework/components/search'
   export default {
     components: {
@@ -216,7 +216,6 @@
     methods: {
       findById() {
         get({id: this.id}, res => {
-          console.log(res)
           this.user = res;
         });
       },
@@ -298,13 +297,13 @@
 
       handleClose() {
         this.tipEditProps.visible = false
-        this.$refs.formValidate.resetFields()
       },
 
       handleConfirm() {
         // 确认编辑备注
         let param = Object.assign(this.formValidate, {id: parseInt(this.id)})
-        update({user: param}, res => {
+        console.log(param)
+        updateComment({user: param}, res => {
           this.$message({
             type: 'success',
             message: '修改备注成功'
