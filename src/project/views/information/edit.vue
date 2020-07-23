@@ -54,6 +54,11 @@
         },
       }
     },
+    watch: {
+      editId(val) {
+        this.findById()
+      }
+    },
     methods: {
       onChangeEditor(val){
         this.formValidate.content = val.html;

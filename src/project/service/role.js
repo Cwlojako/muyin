@@ -8,6 +8,7 @@ let batchDeleteUrl = `api/${model}/delete`;
 let enableUrl = `api/${model}/enable`;
 let disableUrl = `api/${model}/disable`;
 let saveUrl = `api/${model}/save`
+let findByAccountUrl = `api/${model}/findByAccount`
 
 export function get(param, callback) {
   axios.post(getUrl, param).then(data => {
@@ -98,8 +99,8 @@ export function removeModule(param, callback) {
     }
   })
 }
-export function findByAccountId(param, callback) {
-  axios.post(`api/${model}/findByAccountId`, param).then(data => {
+export function findByAccount(param, callback) {
+  axios.post(findByAccountUrl, param).then(data => {
     if (data !== undefined && data !== '' && data !== null) {
       // callback when data is exist
       callback(data)

@@ -75,9 +75,9 @@
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column prop="name" label="姓名"></el-table-column>
+        <el-table-column prop="realname" label="姓名"></el-table-column>
         <el-table-column prop="phone" label="手机号"></el-table-column>
-        <el-table-column prop="status" label="状态">
+        <el-table-column label="状态">
           <template slot-scope="scope">
             {{scope.row.enabled ? '启用' : '禁用'}} 
           </template>
@@ -93,7 +93,7 @@
     <i-create
       :dialog-visible="createProps.visible"
       @on-dialog-close="handleClose"
-      @on-save-success="handleConfirm"
+      @onRefreshData="search(page)"
     />
 
     <!--    &lt;!&ndash;    编辑&ndash;&gt;-->
@@ -101,7 +101,7 @@
         :dialog-visible="editProps.visible"
         :edit-id="editId"
         @on-dialog-close="handleClose"
-        @on-save-success="handleConfirm"
+        @onRefreshData="search(page)"
       />
 
 
@@ -111,10 +111,8 @@
   import Search from "@/framework/components/search";
   import ICreate from "./create"
   import IEdit from "./edit"
-  import {post} from "@/framework/http/request";
   import Emitter from '@/framework/mixins/emitter'
-  // user接口
-  import {search, count, del, enable, disable} from '@/project/service/manager'
+  import {search, count, enable, disable} from '@/project/service/manager'
 
   export default {
     mixins: [Emitter],
@@ -142,7 +140,7 @@
           },
           {
             name: "姓名",
-            key: "roleId",
+            key: "realname",
             type: "string"
           },
           {
@@ -233,8 +231,7 @@
           [this.model]: this.extraParam
         };
         search(param, res => {
-          let data = res;
-          this.data = data;
+          this.data = res;
           this.getTotal();
         });
       },
@@ -310,7 +307,6 @@
       },
 
       handleRowClick(row) {
-        console.log(row);
         this.editId = row.id;
         this.editProps.visible = true;
       },
@@ -337,19 +333,12 @@
             this.editProps.visible = true;
             break;
           case '启用':
-            console.log('启用');
             this.batchEnable();
             break;
           case '禁用':
-            console.log('禁用')
             this.batchDisable();
             break;
         }
-      },
-
-      handleConfirm() {
-        this.handleClose()
-        this.search(1)
       }
     },
     mounted() {

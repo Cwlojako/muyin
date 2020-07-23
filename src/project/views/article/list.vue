@@ -233,7 +233,6 @@
       },
       //批量启用
       batchEnable() {
-        let _t = this;
         let selectList = this.selectList;
         let idList = []
         this.selectList.forEach(item => {
@@ -260,7 +259,6 @@
       },
       //批量禁用
       batchDisable() {
-        let _t = this;
         let selectList = this.selectList;
         let idList = []
         this.selectList.forEach(item => {

@@ -6,20 +6,20 @@
     width="40%"
     :before-close="handleClose">
     <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
-      <el-form-item label="账号" prop="user">
+      <el-form-item label="账号" prop="username">
         <el-input v-model="formValidate.username" placeholder="输入账号"></el-input>
       </el-form-item>
       <el-form-item label="密码" prop="password">
         <el-input type='password' v-model="formValidate.password" placeholder="输入密码"></el-input>
       </el-form-item>
-      <el-form-item label="姓名" prop="name">
+      <el-form-item label="姓名" prop="realname">
         <el-input v-model="formValidate.realname" placeholder="输入姓名"></el-input>
       </el-form-item>
       <el-form-item label="头像" prop="avatar">
         <upload
           @on-transport-file-list="handleTransportFileList"
           :max-size="5120"
-          :limit="3"
+          :limit="1"
         >
         </upload>
       </el-form-item>
@@ -29,8 +29,8 @@
       <el-form-item label="邮箱" prop="email">
         <el-input type='email' v-model="formValidate.email" placeholder="输入邮箱"></el-input>
       </el-form-item>
-      <el-form-item label="备注" prop="tip">
-        <el-input v-model="formValidate.tip" placeholder="输入备注"></el-input>
+      <el-form-item label="备注" prop="comment">
+        <el-input v-model="formValidate.comment" placeholder="输入备注"></el-input>
       </el-form-item>
     </el-form>
     <div slot="footer" class="dialog-footer">
@@ -42,12 +42,11 @@
 
 <script>
   import Upload from "@/framework/components/upload";
-  import emitter from '@/framework/mixins/emitter'
-  import {save} from '@/project/service/manager'
+  import { save } from '@/project/service/manager'
+  import Emitter from '@/framework/mixins/emitter'
 
   export default {
-    name: "createDialog",
-    mixins: [emitter],
+    mixins: [Emitter],
     components: {
       Upload
     },
@@ -77,15 +76,14 @@
             {required: true, message: "邮箱不能为空", trigger: "blur"}
           ]
         },
-        model:'manager',
+        model: 'manager',
         formValidate: {
-          status: '启用',
-          user: '',
+          username: '',
           password: '',
-          name: '',
+          realname: '',
           phone: '',
           email: '',
-          tip: ''
+          comment: ''
         }
       }
     },
@@ -100,21 +98,18 @@
         this.broadcast('SiUpload', 'on-form-submit', () => {});
         this.$nextTick(() => {
           this.$refs[name].validate(valid => {
-            if (valid) {
-              save(
-                {[this.model]:this.formValidate},
-                res => {
-                  this.$message.success('添加成功');
-                  this.$refs.formValidate.resetFields();
-                  this.$emit('on-save-success');
-                })
-            }
+            if (!valid) return false
+            save(
+              {[this.model]: this.formValidate},
+              res => {
+                this.$message.success('添加成功');
+                this.handleClose()
+                this.$emit('onRefreshData');
+              })
           })
         });
       },
-
       handleTransportFileList(fileList) {
-        console.log(fileList)
         this.formValidate.avatar = fileList[0].response.data;
       }
     }

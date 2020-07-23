@@ -14,14 +14,16 @@
         <el-input v-model="formValidate.realname" placeholder="输入姓名"></el-input>
       </el-form-item>
       <el-form-item label="头像" prop="avatar">
-<!--        编辑模式下如果有图片会默认显示第一张图-->
-        <upload
-          @on-transport-file-list="handleTransportFileList"
-          :file-list="formValidate.avatar ? formValidate.avatar.split(';') : []"
-          :max-size="5120"
-          :limit="1"
-        >
-        </upload>
+        <transition name='opacity'>
+          <upload
+            @on-transport-file-list="handleTransportFileList"
+            :file-list="formValidate.avatar ? formValidate.avatar.split(';') : []"
+            :max-size="5120"
+            :limit="1"
+            v-if='isFinished'
+          >
+          </upload>
+        </transition>
       </el-form-item>
       <el-form-item label="手机号" prop="phone">
         <el-input v-model="formValidate.phone" placeholder="输入手机号"></el-input>
@@ -32,10 +34,8 @@
       <el-form-item label="备注" prop="comment">
         <el-input v-model="formValidate.comment" placeholder="输入备注"></el-input>
       </el-form-item>
-
     </el-form>
     <div slot="footer" class="dialog-footer">
-
       <el-button type="primary" @click="handleConfirm('formValidate')">确 定</el-button>
       <el-button type="info" @click="handleClose">取 消</el-button>
     </div>
@@ -47,7 +47,6 @@
   import {get,update} from '@/project/service/manager'
   import emitter from "@/framework/mixins/emitter"
   export default {
-    name: "managerEdit",
     mixins:[emitter],
     components: {
       Upload
@@ -73,9 +72,6 @@
           realname: [
             {required: true, message: "姓名不能为空", trigger: "blur"}
           ],
-          avatar: [
-            {required: true, message: "头像不能为空", trigger: "blur"}
-          ],
           phone: [
             {required: true, message: "手机号不能为空", trigger: "blur"}
           ],
@@ -84,29 +80,33 @@
             {type: "email", message: "邮箱格式不对", trigger: "blur"}
           ],
         },
+        isFinished: false
       }
     },
     watch: {
       // 监听editId的变化，如果发生变化则获取对应id的数据
-      editId(val) {
-        this.get(val);
+      dialogVisible(val) {
+        if (val) {
+          this.get(this.editId);
+        }
       }
     },
     methods: {
       handleClose() {
         this.$emit('on-dialog-close');
+        this.isFinished = false
       },
       handleConfirm(name) {
         //指向广播 this.broadcast为混入的方法
         this.broadcast("SiUpload", "on-form-submit", () => {});
         this.$nextTick(() => {
           this.$refs[name].validate(valid => {
-            if (valid) {
-              update({[this.model]: this.formValidate}, res => {
-                this.$message.success('修改成功');
-                this.$emit('on-save-success');
-              })
-            }
+            if (!valid) return false
+            update({[this.model]: this.formValidate}, res => {
+              this.$message.success('修改成功');
+              this.handleClose()
+              this.$emit('onRefreshData');
+            })
           })
         })
       },
@@ -117,6 +117,9 @@
       get(id) {
         get({id: id}, res => {
           this.formValidate = res;
+          if (res.avatar) {
+            this.isFinished = true
+          }
         });
       }
     }

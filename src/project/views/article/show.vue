@@ -135,7 +135,7 @@
 
 <script>
   import { get, updateEnable } from '@/project/service/post'
-  import { findByPostAndArticle, countByPostAndArticle } from '@/project/service/comment'
+  import { findByPostAndArticle, countByPostAndArticle, updateCommentEnable } from '@/project/service/comment'
   import IEdit from './edit'
   import ICreateComment from './createComment'
   export default {
@@ -177,6 +177,37 @@
       }
     },
     methods: {
+      handleStatusChange(row) {
+        let status = row.enabled ? '禁用' : '启用'
+        this.$confirm(`确定${status}选中内容？`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          if (status === '禁用') {
+            updateCommentEnable({id: row.id, enable: false}, res => {
+              this.$message({
+                type: 'success',
+                message: '已禁用!'
+              });
+              this.getCommentById(this.page);
+            })
+          } else {
+            updateCommentEnable({id: row.id, enable: true}, res => {
+              this.$message({
+                type: 'success',
+                message: '已启用!'
+              });
+              this.getCommentById(this.page);
+            })
+          }
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消删除'
+          });
+        });
+      },
       getById() {
         get({id: this.id}, res => {
           this.postData = res;
@@ -189,7 +220,8 @@
           },
           pageable: {
             page: page,
-            size: this.pageSize
+            size: this.pageSize,
+            asc: 'id'
           }
         }
         findByPostAndArticle(param, res => {

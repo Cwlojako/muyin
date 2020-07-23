@@ -10,7 +10,16 @@
             </el-button>
             <el-dropdown-menu slot="dropdown">
               <el-dropdown-item command="编辑">编辑</el-dropdown-item>
-              <el-dropdown-item command="状态">{{manager.status === '启用' ? '禁用':'启用'}}</el-dropdown-item>
+              <el-dropdown-item command="启用"
+              :disabled="manager.enabled"
+              :style="manager.enabled ? {'color':'rgba(255,255,255,0.4)'} : {'color':'#fff'}">
+                启用
+              </el-dropdown-item>
+              <el-dropdown-item command="禁用" 
+              :disabled="!manager.enabled"
+              :style="!manager.enabled ? {'color':'rgba(255,255,255,0.4)'} : {'color':'#fff'}">
+                禁用
+              </el-dropdown-item>
               <el-dropdown-item command="修改密码">修改密码</el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
@@ -18,6 +27,7 @@
         <div class="text-item avatar">
           <span class="text_label">头像：</span>
           <img
+            v-if='manager.avatar'
             style="width: 50px; height: 50px;border-radius: 40px;"
             :src=$store.state.prefix+manager.avatar
             @click="imgVisible = true" />
@@ -36,7 +46,7 @@
         </div>
         <div class="text-item">
           <span class="text_label">状态：</span>
-          {{manager.status}}
+          {{manager.enabled ? '启用' : '禁用'}}
         </div>
         <div class="text-item">
           <span class="text_label">备注：</span>
@@ -55,7 +65,7 @@
                   <el-button @click="removeRole">删除角色</el-button>
                 </div>
               </div>
-              <el-table class='table-data' :data="myRoleList" style="width: 100%" @selection-change="handleSelectionChange" @row-click="handleRowClick">
+              <el-table class='table-data' :data="myRoleList" style="width: 100%" @selection-change="handleSelectionChange">
                 <el-table-column type="selection" width="55"></el-table-column>
                 <el-table-column prop="name" label="角色名称"></el-table-column>
                 <el-table-column prop="comment" label="角色备注"></el-table-column>
@@ -70,6 +80,7 @@
       :dialog-visible="editProps.visible"
       :edit-id="editId"
       @on-dialog-close="handleClose"
+      @onRefreshData='get'
     ></i-edit>
 
     <preview-img :img-visible="imgVisible" :img-url="manager.avatar" @on-preview-cancel="handleClose">
@@ -118,7 +129,6 @@
         :data="roleList"
         style="width: 100%"
         @selection-change="handleSelectionChange"
-        @row-click="handleRowClick"
       >
         <el-table-column
           type="selection"
@@ -145,7 +155,7 @@
 
 <script>
   import {get, enable, disable, addRole, removeRole, updatePassword} from '@/project/service/manager'
-  import {search, count, findByAccountId} from '@/project/service/role'
+  import {search, count, findByAccount} from '@/project/service/role'
   import previewImg from '@/framework/components/previewImg/previewImg.vue'
   import IEdit from './edit'
 
@@ -189,7 +199,6 @@
         activeName: 'first',
         page: 1,
         pageSize: 10,
-        sort: {desc: ['id']},
         roleList: [],
         total: 0,
         rules: {
@@ -209,15 +218,13 @@
       }
     },
     created() {
-      // console.log(this.$store.state.prefix);
       this.get();
-      this.findByAccountId();
+      this.findByAccount();
     },
     methods: {
       get() {
         get({id: this.id}, res => {
           this.manager = res;
-          console.log(res)
         });
       },
       roleSearch() {
@@ -229,16 +236,13 @@
           },
           role: {}
         };
-
         search(param, res => {
-          // this.roleList = res;
           let arr = res.filter(item => {
             return this.myRoleList.indexOf(item) === -1
           });
           this.roleList = arr;
           this.roleCount();
         });
-
       },
       roleCount() {
         count({role: {}}, res => {
@@ -247,9 +251,6 @@
       },
       handleSelectionChange(val) {
         this.selection = val;
-      },
-      handleRowClick() {
-
       },
       handleSizeChange(val) {
         this.pageSize = val;
@@ -274,25 +275,23 @@
           case '修改密码':
             this.sercetVisible = true;
             break;
-          case '状态':
-            let status = this.manager.status;
-            if (status === '禁用') {
-              enable({id: this.id}, res => {
-                this.$message({
-                  type: 'success',
-                  message: '已启用!'
-                });
-                this.get();
-              })
-            } else {
-              disable({id: this.id}, res => {
-                this.$message({
-                  type: 'success',
-                  message: '已禁用!'
-                });
-                this.get();
-              })
-            }
+          case '禁用':
+            disable({id: this.id}, res => {
+              this.$message({
+                type: 'success',
+                message: '已禁用!'
+              });
+              this.get();
+            })
+            break;
+          case '启用':
+            enable({id: this.id}, res => {
+              this.$message({
+                type: 'success',
+                message: '已启用!'
+              });
+              this.get();
+            })
             break;
         }
       },
@@ -313,30 +312,28 @@
         this.roleSearch();
       },
       addRole(id) {
-        console.log(this.selection);
         this.selection.forEach((item,index) => {
           addRole({id: parseInt(this.id), roleId: item.id}, res => {
             if (index === this.selection.length-1) {
               this.$message.success('添加成功');
-              this.findByAccountId();
+              this.findByAccount();
               this.handleClose();
             }
           })
         })
-
       },
       removeRole(id) {
         this.selection.forEach((item,index) => {
           removeRole({id: this.id, roleId: item.id}, res => {
             if (index === this.selection.length-1) {
               this.$message.success('删除成功');
-              this.findByAccountId();
+              this.findByAccount();
             }
           })
         })
       },
-      findByAccountId() {
-        findByAccountId({accountId: this.id}, res => {
+      findByAccount() {
+        findByAccount({account: {id: this.id}}, res => {
           this.myRoleList = res;
           this.roleSearch();
         })

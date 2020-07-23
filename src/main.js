@@ -8,7 +8,7 @@ import 'element-ui/lib/theme-chalk/index.css';
 import locale from 'element-ui/lib/locale/lang/en'
 import App from './App'
 import router from './project/router'
-
+import './framework/style/transition.css'
 
 Vue.config.productionTip = false
 Vue.use(ElementUI);

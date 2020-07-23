@@ -54,7 +54,8 @@
           <span class="text_label">头像：</span>
           <el-avatar shape="circle" :size="45" :fit="'fill'"
             :src='`http://8.129.170.69/attachment/${user.avatar}`'
-            class="head-setting-right-avatar">
+            class="head-setting-right-avatar"
+            v-if='user.avatar'>
           </el-avatar>
         </div>
         <div class="text-item">
@@ -217,6 +218,7 @@
       findById() {
         get({id: this.id}, res => {
           this.user = res;
+          this.formValidate.comment = res.comment
         });
       },
       handleClick(command){

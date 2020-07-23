@@ -10,24 +10,30 @@
         <el-input v-model="formValidate.title" placeholder="请输入"></el-input>
       </el-form-item>
       <el-form-item label="封面图" prop="cover">
-        <upload
-          @on-transport-file-list="handleTransportCover"
-          :file-list="formValidate.cover ? formValidate.cover.split(';') : []"
-          :max-size="5120"
-          :limit="1">
-        </upload>
+        <transition name='opacity'>
+          <upload
+            @on-transport-file-list="handleTransportCover"
+            :file-list="formValidate.cover ? formValidate.cover.split(';') : []"
+            :max-size="5120"
+            :limit="1"
+            v-if='isCoverFinished'>
+          </upload>
+        </transition>
         <span class="upload-tip">*建议上传图片尺寸200*200，上传本地图片，最多1张</span>
       </el-form-item>
       <el-form-item label="正文" prop="content">
         <el-input type="textarea" v-model="formValidate.content"></el-input>
       </el-form-item>
       <el-form-item label="正文图片" prop="images">
-        <upload
-          @on-transport-file-list="handleTransportImages"
-          :file-list="formValidate.images ? formValidate.images.split(';') : []"
-          :max-size="5120"
-          :limit="7">
-        </upload>
+        <transition name='opacity'>
+          <upload
+            @on-transport-file-list="handleTransportImages"
+            :file-list="formValidate.images ? formValidate.images.split(';') : []"
+            :max-size="5120"
+            :limit="9"
+            v-if='isImagesFinished'>
+          </upload>
+        </transition>
         <span class="upload-tip">*建议上传图片尺寸200*200，上传本地图片，最多7张</span>
       </el-form-item>
     </el-form>
@@ -59,6 +65,13 @@
       }
     },
     data() {
+      const validateCover = (rule, value, callback) => {
+        if (this.formValidate.cover === '') {
+          callback("封面不能为空");
+        } else {
+          callback();
+        }
+      };
       return {
         formValidate: {
           title: '',
@@ -69,12 +82,17 @@
         ruleValidate: {
           title: [{required: true, message: '标题不能为空', trigger: 'blur'}],
           content: [{required: true, message: '内容不能为空', trigger: 'blur'}],
-        }
+          cover: [{validator: validateCover, trigger: 'blur'}]
+        },
+        isCoverFinished: false,
+        isImagesFinished: false
       }
     },
     methods: {
       handleClose() {
         this.$emit('on-dialog-close');
+        this.isCoverFinished = false
+        this.isImagesFinished = false
       },
       handleConfirm() {
         this.broadcast('SiUpload', 'on-form-submit', () => {});
@@ -93,10 +111,13 @@
         })
       },
       handleTransportCover(fileList) {
-        this.formValidate.cover = fileList[0].response.data
+        if (fileList.length === 0) {
+          this.formValidate.cover = ''
+        } else {
+          this.formValidate.cover = fileList[0].response.data
+        }
       },
       handleTransportImages(fileList) {
-        console.log(fileList)
         let imageArr = []
         for(let i = 0; i < fileList.length; i++) {
           imageArr.push(fileList[i].response.data)
@@ -106,15 +127,16 @@
       findById() {
         if (this.editId) {
           get({id: this.editId}, res => {
-            console.log(res)
             this.formValidate = res;
+            this.isCoverFinished = true
+            this.isImagesFinished = true
           })
         }
       },
     },
     watch: {
-      dialogVisible(e) {
-        if(e){
+      dialogVisible(val) {
+        if(val){
           this.findById()
         }
       }
