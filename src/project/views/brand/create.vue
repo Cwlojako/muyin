@@ -6,11 +6,11 @@
     width="40%"
     :before-close="handleClose">
     <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="formValidate.status" placeholder="请选择" @change="changeType">
-          <el-option value="1" label="启用"></el-option>
-          <el-option value="2" label="禁用"></el-option>
-        </el-select>
+      <el-form-item label="状态">
+        <el-radio-group v-model="formValidate.enabled">
+          <el-radio label="启用" value='启用'></el-radio>
+          <el-radio label="禁用" value='禁用'></el-radio>
+        </el-radio-group>
       </el-form-item>
       <el-form-item label="品牌名称" prop="name">
         <el-input v-model="formValidate.name" placeholder="请输入分类名称"></el-input>
@@ -18,7 +18,7 @@
       <el-form-item label="排序数值" prop="order">
         <el-input-number v-model="formValidate.order" placeholder="请输入排序数值"></el-input-number>
       </el-form-item>
-      <el-form-item label="品牌logo" prop="avatar">
+      <el-form-item label="品牌logo" prop="image">
         <upload
           @on-transport-file-list="handleTransportFileList"
           :max-size="5120"
@@ -38,10 +38,9 @@
 <script>
   import Upload from "@/framework/components/upload";
   import emitter from '@/framework/mixins/emitter'
-  import {save} from '@/project/service/manager'
+  import { save } from '@/project/service/brand'
 
   export default {
-    name: "brandAdd",
     mixins: [emitter],
     components: {
       Upload
@@ -56,53 +55,53 @@
       return {
         // 添加表单校验规则
         ruleValidate: {
-          status: [
+          enabled: [
             {required: true, message: "请选择状态", trigger: "blur"}
           ],
           name: [
             {required: true, message: "名称不能为空", trigger: "blur"}
           ],
-          order: [
+          position: [
             {required: true, message: "排序数值不能为空", trigger: "blur"}
           ]
         },
         model:'brand',
         formValidate: {
-          status: '',
+          enabled: '启用',
           name: '',
-          order: '',
-          avatar: ''
+          position: 0,
+          image: ''
         }
       }
     },
     methods: {
-      changeType() {},
       handleClose() {
         this.$refs.formValidate.resetFields();
         this.$emit('on-dialog-close');
       },
-
       handleConfirm(name) {
         // 通知上传子组件执行相应的操作
         this.broadcast('SiUpload', 'on-form-submit', () => {});
         this.$nextTick(() => {
           this.$refs[name].validate(valid => {
-            if (valid) {
-              save(
-                {[this.model]:this.formValidate},
-                res => {
-                  this.$message.success('添加成功');
-                  this.$refs.formValidate.resetFields();
-                  this.$emit('on-save-success');
-                })
-            }
+            if (!valid) return false
+            let param = Object.assign({}, this.formValidate)
+            param.enabled = this.formValidate.enabled === '启用'
+            save(
+              {[this.model]: param},
+              res => {
+                this.$message.success('添加成功');
+                this.handleClose();
+                this.$emit('onRefreshData');
+              })
           })
         });
       },
-
       handleTransportFileList(fileList) {
-        if (fileList.length !== 0) {
-          this.formValidate.avatar = fileList[0].response.data;
+        if (fileList.length === 0) {
+          this.formValidate.image = ""
+        } else {
+          this.formValidate.image = fileList[0].response.data
         }
       }
     }
