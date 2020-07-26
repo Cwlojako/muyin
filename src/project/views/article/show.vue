@@ -128,7 +128,7 @@
     <i-create-comment
       :dialog-visible="createProps.visible"
       @on-dialog-close="handleClose"
-      @on-save-success="handleSave"
+      @onRefreshData="getCommentById(page)"
     />
   </div>
 </template>
@@ -276,10 +276,6 @@
       handleClose(){
         this.editProps.visible = false
         this.createProps.visible = false
-      },
-      handleSave(){
-        this.findById();
-        this.handleClose();
       },
       handleCurrentChange(val) {
         this.page = val;

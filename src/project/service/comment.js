@@ -4,6 +4,8 @@ const model = 'comment';
 let findByPostAndArticleUrl = `api/${model}/findByPostAndArticle`;
 let countByPostAndArticleUrl = `api/${model}/countByPostAndArticle`;
 let updateCommentEnableUrl = `api/${model}/updateEnable`;
+let saveUrl = `api/${model}/save`;
+
 
 // 查询资讯文章评论
 export function findByPostAndArticle(param, callback) {
@@ -30,4 +32,11 @@ export function updateCommentEnable(param, callback) {
   })
 }
 
+export function save(param, callback) {
+  axios.post(saveUrl, param).then(data => {
+    if (data !== undefined && data !== '' && data !== null) {
+      callback(data)
+    }
+  })
+}
 

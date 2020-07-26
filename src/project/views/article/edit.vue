@@ -71,7 +71,7 @@
         } else {
           callback();
         }
-      };
+      }
       return {
         formValidate: {
           title: '',
