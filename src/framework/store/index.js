@@ -7,7 +7,7 @@ const initPageState = () => {
     user: {
       token: ""
     },
-    userName: localStorage.getItem('userName'),
+    userName: localStorage.getItem('userName') || '',
     prefix:'http://8.129.170.69/attachment/',
   };
 };

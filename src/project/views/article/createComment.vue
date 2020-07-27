@@ -42,6 +42,7 @@
         style="width: 95%;margin:0 auto;"
         highlight-current-row
         @current-change="handleSelect"
+        ref='singleTable'
       >
         <el-table-column label="昵称">
           <template slot-scope="scope">
@@ -140,6 +141,9 @@
             content: this.formValidate.content,
             user: {
               id: this.userId
+            },
+            post: {
+              id: parseInt(this.$route.params.id)
             }
           }
           save({[this.model]: param}, res => {
@@ -151,6 +155,9 @@
       },
       selectUser() {
         this.userVisible = true
+        this.$nextTick(() => {
+          this.$refs.singleTable.setCurrentRow(this.userData[0]);
+        })
       },
       confirmUser() {
         this.userVisible = false

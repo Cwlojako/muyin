@@ -6,22 +6,22 @@
     width="40%"
     :before-close="handleClose">
     <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
-      <el-form-item label="状态" prop="status">
-        <el-select v-model="formValidate.status" placeholder="请选择" @change="changeType">
-          <el-option value="1" label="启用"></el-option>
-          <el-option value="2" label="禁用"></el-option>
-        </el-select>
+      <el-form-item label="状态">
+        <el-radio-group v-model="formValidate.enabled">
+          <el-radio label="启用" value='启用'></el-radio>
+          <el-radio label="禁用" value='禁用'></el-radio>
+        </el-radio-group>
       </el-form-item>
-      <el-form-item label="上级分类" prop="parentCate">
+      <el-form-item label="上级分类">
         <span>顶级分类</span>
       </el-form-item>
       <el-form-item label="分类名称" prop="name">
         <el-input v-model="formValidate.name" placeholder="请输入分类名称"></el-input>
       </el-form-item>
-      <el-form-item label="排序数值" prop="order">
-        <el-input-number v-model="formValidate.order" placeholder="请输入排序数值"></el-input-number>
+      <el-form-item label="排序数值" prop="position">
+        <el-input-number v-model="formValidate.position" placeholder="请输入排序数值"></el-input-number>
       </el-form-item>
-      <el-form-item label="分类图" prop="avatar">
+      <el-form-item label="分类图" prop="image">
         <upload
           @on-transport-file-list="handleTransportFileList"
           :max-size="5120"
@@ -41,10 +41,9 @@
 <script>
   import Upload from "@/framework/components/upload";
   import emitter from '@/framework/mixins/emitter'
-  import {save} from '@/project/service/manager'
+  import {save} from '@/project/service/category'
 
   export default {
-    name: "createDialog",
     mixins: [emitter],
     components: {
       Upload
@@ -71,7 +70,7 @@
         },
         model:'goodsCategory',
         formValidate: {
-          status: '',
+          eanbled: '启用',
           name: '',
           order: '',
           avatar: ''

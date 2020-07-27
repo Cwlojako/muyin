@@ -93,7 +93,7 @@
   import {post} from "@/framework/http/request";
   import Emitter from '@/framework/mixins/emitter'
   // user接口
-  import {search, count, del, enable, disable} from '@/project/service/manager'
+  import {search, count} from '@/project/service/evaluation'
 
   export default {
     mixins: [Emitter],
