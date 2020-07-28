@@ -7,7 +7,7 @@
     :before-close="handleClose">
     <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
       <el-form-item label="状态">
-        <el-radio-group v-model="formValidate.enabled">a
+        <el-radio-group v-model="formValidate.enabled">
           <el-radio label="启用" value='启用'></el-radio>
           <el-radio label="禁用" value='禁用'></el-radio>
         </el-radio-group>
@@ -85,7 +85,9 @@
         this.$nextTick(() => {
           this.$refs[name].validate(valid => {
             if (!valid) return false
-            update({brand: this.formValidate}, res => {
+            let param = Object.assign({}, this.formValidate)
+            param.enabled = this.formValidate.enabled === '启用'
+            update({brand: param}, res => {
               this.$message.success('修改成功');
               this.handleClose()
               this.$emit('onRefreshData');

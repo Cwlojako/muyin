@@ -20,8 +20,8 @@
             <el-dropdown-item
               icon="el-icon-circle-check"
               command="启用"
-              :disabled="selectList.findIndex(s=>{return s.status === '启用'}) >=0 || selectList.length === 0"
-              :style="(selectList.findIndex(s=>{return s.status === '启用'}) >=0 || selectList.length === 0)?{'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}"
+              :disabled="selectList.some(item => item.enabled)"
+              :style="selectList.some(item => item.enabled)?{'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}"
               @click="batchEnable"
             >
               启用
@@ -29,8 +29,8 @@
             <el-dropdown-item
               icon="el-icon-circle-close"
               command="禁用"
-              :disabled="selectList.findIndex(s=>{return s.status === '禁用'}) >=0 || selectList.length === 0"
-              :style="(selectList.findIndex(s=>{return s.status === '禁用'}) >=0 || selectList.length === 0)?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}"
+              :disabled="selectList.some(item => !item.enabled)"
+              :style="selectList.some(item => !item.enabled)?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}"
               @click.stop="batchDisable"
             >
               禁用
@@ -64,24 +64,28 @@
               @click.native.prevent="toDetail(scope.row)"
               type="text"
               size="small">
-              {{scope.row.username}}
+              {{scope.row.account.nickname}}
             </el-button>
           </template>
         </el-table-column>
         <el-table-column prop="phone" label="手机号"></el-table-column>
         <el-table-column prop="order" label="订单号"></el-table-column>
-        <el-table-column prop="name" label="商品名称"></el-table-column>
-        <el-table-column prop="star" label="评价星级">
+        <el-table-column prop="product" label="商品名称"></el-table-column>
+        <el-table-column prop="scores" label="评价星级" width="120" align='center'>
           <template slot-scope="scope">
-            <i class="el-icon-star-on"></i>
+            <i class="el-icon-star-on" v-for='item in scope.row.scores'></i>
           </template>
         </el-table-column>
         <el-table-column prop="content" label="评价内容"></el-table-column>
-        <el-table-column prop="createAt" label="评价时间" sortable width="180"></el-table-column>
-        <el-table-column prop="status" label="状态"></el-table-column>
+        <el-table-column prop="createTime" label="评价时间" sortable width="180"></el-table-column>
+        <el-table-column label="状态">
+          <template slot-scope="scope">
+            {{scope.row.enabled ? '启用' : '禁用'}}
+          </template>
+        </el-table-column>
         <el-table-column fixed="right" label="操作">
           <template slot-scope="scope">
-            <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.status.indexOf('启用') >= 0 ? '禁用' : '启用'}}</el-button>
+            <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.enabled ? '禁用' : '启用'}}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -90,10 +94,9 @@
 </template>
 <script>
   import Search from "@/framework/components/search";
-  import {post} from "@/framework/http/request";
+  import { post } from "@/framework/http/request";
   import Emitter from '@/framework/mixins/emitter'
-  // user接口
-  import {search, count} from '@/project/service/evaluation'
+  import { search, count, disable, enabled } from '@/project/service/evaluation'
 
   export default {
     mixins: [Emitter],
@@ -102,7 +105,6 @@
         model: "evaluate",
         data: [],
         selectList: [],
-        sort: {asc: [], desc: []},
         pageSize: 10,
         page: 1,
         total: 0,
@@ -110,24 +112,24 @@
         searchItems: [
           {
             name: "商品名称",
-            key: "username",
+            key: "product",
             type: "string"
           },
           {
             name: "状态",
-            key: "status",
+            key: "enabled",
             type: "select",
             displayValue: ["禁用", "启用"],
             value: ["禁用", "启用"]
           },
           {
             name: "评论时间",
-            key: "time",
+            key: "createTime",
             type: "datetimerange"
           },
           {
             name: "评价星级",
-            key: "star",
+            key: "scores",
             type: "select",
             displayValue: ["1星", "2星", "3星", "4星", "5星"],
             value: ["1", "2", "3", "4", "5"]
@@ -141,13 +143,7 @@
     methods: {
       // 控制启禁用
       handleStatusChange(row) {
-        let status;
-        let _t = this;
-        if (row.status.indexOf('启用') >= 0) {
-          status = '禁用'
-        } else {
-          status = '启用'
-        }
+        let status = row.enabled ? '禁用' : '启用';
         this.$confirm(`确定${status}选中内容？`, '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
@@ -155,19 +151,19 @@
         }).then(() => {
           if (status === '禁用') {
             disable({id: row.id}, res => {
-              _t.$message({
+              this.$message({
                 type: 'success',
                 message: '已禁用!'
               });
-              _t.search(_t.page);
+              this.search(this.page);
             })
           } else {
-            enable({id: row.id}, res => {
-              _t.$message({
+            enabled({id: row.id}, res => {
+              this.$message({
                 type: 'success',
                 message: '已启用!'
               });
-              _t.search(_t.page);
+              this.search(this.page);
             })
           }
         }).catch(() => {
@@ -176,7 +172,6 @@
             message: '已取消删除'
           });
         });
-
       },
       searchBySearchItem(searchItems) {
         let keys = [];
@@ -192,6 +187,14 @@
         for (let i in keys) {
           if (searchItems[keys[i]]) {
             this.extraParam[keys[i]] = searchItems[keys[i]];
+            // 处理状态参数
+            if (keys[i] === 'enabled') {
+              this.extraParam[keys[i]] = searchItems[keys[i]] === '启用'
+            }
+            // 分数
+            if (keys[i] === 'scores') {
+              this.extraParam[keys[i]] = parseInt(searchItems[keys[i]])
+            }
           } else {
             delete this.extraParam[keys[i]];
           }
@@ -199,45 +202,35 @@
         this.search(1);
       },
 
-      toCreate() {
-        this.createProps.visible = true;
-      },
-
       search(page) {
-        let _t = this;
-        _t.page = page;
+        this.page = page;
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
+            size: this.pageSize,
+            desc: 'id'
           },
-          manager: _t.extraParam
+          evaluation: this.extraParam
         };
-        if (
-          param.pageable.sort.asc.length === 0 &&
-          param.pageable.sort.desc.length === 0
-        ) {
-          delete param.pageable.sort;
-        }
         search(param, res => {
-          let data = res;
-          _t.data = data;
-          _t.getTotal();
+          this.data = res;
+          this.getTotal();
         });
       },
 
       getTotal() {
-        let _t = this;
-        let param = {manager: _t.extraParam};
+        let param = {evaluation: this.extraParam};
         count(param, res => {
-          _t.total = parseInt(res);
+          this.total = parseInt(res);
         });
+      },
+
+      toCreate() {
+        this.createProps.visible = true;
       },
 
       //批量启用
       batchEnable() {
-        let _t = this;
         let selectList = this.selectList;
         this.$confirm('确定启用所选的记录吗?', '启用提示', {
           confirmButtonText: '确定',
@@ -245,15 +238,14 @@
           type: 'warning'
         }).then(() => {
           selectList.map(s => {
-            enable({id: s.id}, res => {
-              _t.search(_t.page);
-              this.$message({
-                type: 'success',
-                message: '启用成功!'
-              });
+            enabled({id: s.id}, res => {
+              this.search(this.page);
             })
           })
-
+          this.$message({
+            type: 'success',
+            message: '启用成功!'
+          });
         }).catch(() => {
           this.$message({
             type: 'info',
@@ -264,7 +256,6 @@
 
       //批量禁用
       batchDisable() {
-        let _t = this;
         let selectList = this.selectList;
         this.$confirm('确定禁用所选的记录吗?', '禁用提示', {
           confirmButtonText: '确定',
@@ -273,13 +264,13 @@
         }).then(() => {
           selectList.map(s => {
             disable({id: s.id}, res => {
-              _t.search(_t.page);
-              this.$message({
-                type: 'success',
-                message: '禁用成功!'
-              });
+              this.search(this.page);
             })
           })
+          this.$message({
+            type: 'success',
+            message: '禁用成功!'
+          });
         }).catch(() => {
           this.$message({
             type: 'info',

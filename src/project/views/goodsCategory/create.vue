@@ -58,31 +58,23 @@
       return {
         // 添加表单校验规则
         ruleValidate: {
-          status: [
-            {required: true, message: "请选择状态", trigger: "blur"}
-          ],
-          name: [
-            {required: true, message: "名称不能为空", trigger: "blur"}
-          ],
-          order: [
-            {required: true, message: "排序数值不能为空", trigger: "blur"}
-          ]
+          name: [{required: true, message: "名称不能为空", trigger: "blur"}],
+          position: [{required: true, message: "排序数值不能为空", trigger: "blur"}]
         },
-        model:'goodsCategory',
+        model:'category',
         formValidate: {
-          eanbled: '启用',
+          enabled: '启用',
           name: '',
-          order: '',
-          avatar: ''
+          position: '',
+          image: ''
         }
       }
     },
-    computed: {},
     methods: {
-      changeType() {},
       handleClose() {
         this.$refs.formValidate.resetFields();
         this.$emit('on-dialog-close');
+        this.broadcast('SiUpload', 'on-close', () => {});
       },
 
       handleConfirm(name) {
@@ -90,21 +82,26 @@
         this.broadcast('SiUpload', 'on-form-submit', () => {});
         this.$nextTick(() => {
           this.$refs[name].validate(valid => {
-            if (valid) {
-              save(
-                {[this.model]:this.formValidate},
-                res => {
-                  this.$message.success('添加成功');
-                  this.$refs.formValidate.resetFields();
-                  this.$emit('on-save-success');
-                })
-            }
+            if (!valid) return false
+            let param = Object.assign({type: 'product'}, this.formValidate)
+            param.enabled = this.formValidate.enabled === '启用'
+            save(
+              {[this.model]: param},
+              res => {
+                this.$message.success('添加成功');
+                this.handleClose()
+                this.$emit('onRefreshData');
+              })
           })
         });
       },
 
       handleTransportFileList(fileList) {
-        this.formValidate.avatar = fileList[0].response.data;
+        if (fileList.length === 0) {
+          this.formValidate.image = ''
+        } else {
+          this.formValidate.image = fileList[0].response.data
+        }
       }
     }
   }

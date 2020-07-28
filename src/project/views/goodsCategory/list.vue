@@ -95,12 +95,13 @@
     <i-create
       :dialog-visible="createProps.visible"
       @on-dialog-close="handleClose"
+      @onRefreshData='search(page)'
     />
     <i-edit
       :dialog-visible="editProps.visible"
       :id="editId"
       @on-dialog-close="handleClose"
-      @on-save-success="handleConfirm"
+      @onRefreshData='search(page)'
     />
   </el-row>
 </template>
@@ -217,7 +218,7 @@
           pageable: {
             page: page,
             size: this.pageSize,
-            asc: 'position'
+            desc: 'position'
           },
           child: this.extraParam
         };
@@ -228,7 +229,7 @@
       },
       getTotal() {
         let param = {
-          [this.model]: this.extraParam
+          child: this.extraParam
         }
         count(param, res => {
           this.total = parseInt(res);
@@ -248,7 +249,7 @@
           type: 'warning'
         }).then(() => {
           selectList.map(s => {
-            enable({id: s.id}, res => {
+            enabled({id: s.id}, res => {
               this.search(this.page);
             })
           })
@@ -331,10 +332,6 @@
             this.batchDisable();
             break;
         }
-      },
-      handleConfirm() {
-        this.handleClose()
-        this.search(1)
       }
     },
     mounted() {

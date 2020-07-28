@@ -6,6 +6,7 @@ let saveUrl = `api/${model}/save`;
 let enabledUrl = `api/${model}/enabled`;
 let disableUrl = `api/${model}/disable`;
 let getUrl = `api/${model}/get`;
+let updateUrl = `api/${model}/update`;
 
 export function search(param, callback) {
   axios.post(searchUrl, param).then(data => {
@@ -60,3 +61,11 @@ export function get(param, callback) {
     })
 }
 
+export function update(param, callback) {
+  axios.post(updateUrl, param).then(data => {
+      if (data !== undefined && data !== '' && data !== null) {
+      // callback when data is exist
+      callback(data)
+      }
+  })
+}

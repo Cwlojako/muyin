@@ -55,9 +55,6 @@
       return {
         // 添加表单校验规则
         ruleValidate: {
-          enabled: [
-            {required: true, message: "请选择状态", trigger: "blur"}
-          ],
           name: [
             {required: true, message: "名称不能为空", trigger: "blur"}
           ],

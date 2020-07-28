@@ -6,29 +6,32 @@
     width="60%"
     :before-close="handleClose">
     <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
-      <el-form-item label="状态" prop="brand">
-        <el-select v-model="formValidate.status" placeholder="请选择" @change="changeType">
-          <el-option value="1" label="启用"></el-option>
-          <el-option value="2" label="禁用"></el-option>
-        </el-select>
+      <el-form-item label="状态">
+        <el-radio-group v-model="formValidate.enabled">
+          <el-radio label="启用" value='启用'></el-radio>
+          <el-radio label="禁用" value='禁用'></el-radio>
+        </el-radio-group>
       </el-form-item>
-      <el-form-item label="上级分类" prop="parentCate">
+      <el-form-item label="上级分类">
         <span>顶级分类</span>
       </el-form-item>
       <el-form-item label="分类名称" prop="name">
-        <el-input v-model="formValidate.username" placeholder="请输入分类名称"></el-input>
+        <el-input v-model="formValidate.name" placeholder="请输入分类名称"></el-input>
       </el-form-item>
-      <el-form-item label="排序数值" prop="order">
-        <el-input-number v-model="formValidate.id" placeholder="请输入排序数值"></el-input-number>
+      <el-form-item label="排序数值" prop="position">
+        <el-input-number v-model="formValidate.position" placeholder="请输入排序数值"></el-input-number>
       </el-form-item>
       <el-form-item label="分类图" prop="image">
-        <upload
-          @on-transport-file-list="handleTransportFileList"
-          :file-list="formValidate.avatar ? formValidate.avatar.split(';') : []"
-          :max-size="5120"
-          :limit="1"
-        >
-        </upload>
+        <transition name='opacity'>
+          <upload
+            @on-transport-file-list="handleTransportFileList"
+            :file-list="formValidate.image ? formValidate.image.split(';') : []"
+            :max-size="5120"
+            :limit="1"
+            v-if='isFinished'
+          >
+          </upload>
+       </transition>
         <span class="upload-tip">*建议上传图片尺寸200*200，上传本地图片，最多1张</span>
       </el-form-item>
     </el-form>
@@ -42,7 +45,7 @@
 <script>
   import Upload from "@/framework/components/upload";
   import Editor from "@/framework/components/editor"
-  import {get,update} from '@/project/service/manager'
+  import { get, update } from '@/project/service/category'
   import Emitter from '@/framework/mixins/emitter'
 
   export default {
@@ -63,40 +66,46 @@
     },
     data() {
       return {
-        formValidate: {},
+        formValidate: {
+          enabled: '启用',
+          name: '',
+          position: '',
+          image: ''
+        },
         ruleValidate: {
-          username: [{required: true, message: '不能为空', trigger: 'blur'}],
-          image: [{required: true, message: '不能为空', trigger: 'blur'}]
-        }
+          name: [{required: true, message: "名称不能为空", trigger: "blur"}],
+          position: [{required: true, message: "排序数值不能为空", trigger: "blur"}]
+        },
+        isFinished: false
       }
     },
     methods: {
-      changeType() {},
       handleClose() {
-        // this.visible = false;
-        this.$emit('on-dialog-close');
+        this.$emit('on-dialog-close')
+        this.isFinished = false
       },
       handleConfirm(name) {
-        this.broadcast("SiUpload", "on-form-submit", () => {});
+        this.broadcast("SiUpload", "on-form-submit", () => {})
         this.$nextTick(() => {
           this.$refs[name].validate(valid => {
-            if (valid) {
-              update({page: this.formValidate}, res => {
-                this.$notify.success('修改成功');
-                this.$emit('on-save-success');
-              })
-            }
+            if (!valid) return false
+            update({category: this.formValidate}, res => {
+              this.$message.success('修改成功')
+              this.handleClose()
+              this.$emit('on-save-success')
+            })
           })
         })
       },
       handleTransportFileList(fileList) {
-        this.formValidate.image = fileList[0].response.data;
+        this.formValidate.image = fileList[0].response.data
       },
       findById() {
         if (this.id) {
           get({id:this.id},res => {
-            console.log(res)
-            this.formValidate = res;
+            this.formValidate = res
+            this.formValidate.enabled =  res.enabled ? '启用' : '禁用'
+            this.isFinished = true
           })
         }
       },
