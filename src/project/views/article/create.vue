@@ -56,6 +56,13 @@
       }
     },
     data() {
+      const validateCover = (rule, value, callback) => {
+        if (this.formValidate.cover === '') {
+          callback("封面不能为空");
+        } else {
+          callback();
+        }
+      }
       return {
         show: false,
         formValidate: {

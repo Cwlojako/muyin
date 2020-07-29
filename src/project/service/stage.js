@@ -2,6 +2,7 @@ import axios from '@/framework/http/axios'
 // 喂养阶段
 const model = 'stage';
 let searchUrl = `api/${model}/search`;
+let searchStageUrl = `api/${model}/search`;
 let countUrl = `api/${model}/count`;
 let delUrl = `api/${model}/deleteById`;
 let saveUrl = `api/${model}/save`;
@@ -10,6 +11,14 @@ let updateUrl = `api/${model}/update`;
 
 export function search(param, callback) {
   axios.post(searchUrl, param).then(data => {
+    if (data !== undefined && data !== '' && data !== null) {
+      callback(data)
+    }
+  })
+}
+
+export function searchStage(param, callback) {
+  axios.post(searchStageUrl, param).then(data => {
     if (data !== undefined && data !== '' && data !== null) {
       callback(data)
     }

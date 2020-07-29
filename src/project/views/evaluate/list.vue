@@ -134,7 +134,8 @@
             displayValue: ["1星", "2星", "3星", "4星", "5星"],
             value: ["1", "2", "3", "4", "5"]
           }
-        ]
+        ],
+        createTimeParam: {}
       };
     },
     components: {
@@ -195,9 +196,19 @@
             if (keys[i] === 'scores') {
               this.extraParam[keys[i]] = parseInt(searchItems[keys[i]])
             }
+            if (keys[i] === 'createTime') delete this.extraParam[keys[i]]
           } else {
             delete this.extraParam[keys[i]];
           }
+        }
+        // 处理评论时间参数
+        if (searchItems.createTime) {
+          this.createTimeParam = {
+            'start': searchItems.createTime[0],
+            'end': searchItems.createTime[1]
+          }
+        } else {
+          delete this.createTimeParam
         }
         this.search(1);
       },
@@ -210,8 +221,10 @@
             size: this.pageSize,
             desc: 'id'
           },
-          evaluation: this.extraParam
+          evaluation: this.extraParam,
+          createTime: this.createTimeParam
         };
+        if (JSON.stringify(param.createTime) === "{}") delete param.createTime
         search(param, res => {
           this.data = res;
           this.getTotal();
@@ -219,7 +232,11 @@
       },
 
       getTotal() {
-        let param = {evaluation: this.extraParam};
+        let param = {
+          evaluation: this.extraParam,
+          createTime: this.createTimeParam
+        }
+        if (JSON.stringify(param.createTime) === "{}") delete param.createTime
         count(param, res => {
           this.total = parseInt(res);
         });

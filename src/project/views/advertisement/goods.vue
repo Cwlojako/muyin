@@ -40,7 +40,6 @@
 <script>
   import Search from "@/framework/components/search";
   import Emitter from '@/framework/mixins/emitter'
-  import {searchGoods, countGoods, getCategory} from '@/project/service/goods' //接口
 
   export default {
     name:'goods',

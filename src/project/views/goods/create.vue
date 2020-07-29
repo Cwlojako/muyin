@@ -11,48 +11,38 @@
       </el-form-item>
       <el-form-item label="商品品牌" prop="brand">
         <el-select v-model="formValidate.brand" placeholder="请选择商品品牌">
-          <el-option value="1" label="1"></el-option>
-          <el-option value="2" label="2"></el-option>
-          <el-option value="3" label="3"></el-option>
+          <el-option :value="item.id" :label="item.name" v-for='(item, index) in brandOptions' :key='index'></el-option>
         </el-select>
       </el-form-item>
-      <el-form-item label="商品分类" prop="name">
-        <el-select v-model="formValidate.category1" placeholder="请选择一级分类">
-          <el-option value="1" label="1"></el-option>
-          <el-option value="2" label="2"></el-option>
-          <el-option value="3" label="3"></el-option>
-        </el-select>
-        <el-select v-model="formValidate.category2" placeholder="请选择二级分类">
-          <el-option value="1" label="1"></el-option>
-          <el-option value="2" label="2"></el-option>
-          <el-option value="3" label="3"></el-option>
+      <el-form-item label="商品分类" prop="category">
+        <el-select v-model="formValidate.category" placeholder="请选择一级分类">
+          <el-option :value="item.id" :label="item.name" v-for='(item, index) in categoryOptions' :key='index'></el-option>
         </el-select>
       </el-form-item>
-      <el-form-item label="喂养阶段" prop="name">
+      <el-form-item label="喂养阶段" prop="feedLevel">
         <el-select v-model="formValidate.feedLevel" placeholder="请选择喂养阶段">
-          <el-option value="1" label="1"></el-option>
-          <el-option value="2" label="2"></el-option>
-          <el-option value="3" label="3"></el-option>
+          <el-option value="-1" label="无"></el-option>
+          <el-option :value="item.name" :label="item.name" v-for='(item, index) in stageOptions' :key='index'></el-option>
         </el-select>
       </el-form-item>
-      <el-form-item label="排序数值" prop="name">
+      <el-form-item label="排序数值" prop="position">
         <el-input-number size="small" v-model="formValidate.position" style="width: 200px"></el-input-number>
       </el-form-item>
-      <el-form-item label="单笔订单运费" prop="name">
-        <el-input type='number' v-model="formValidate.deliver" placeholder="请输入"></el-input>&nbsp;元
+      <el-form-item label="单笔订单运费" prop="deliverPrice">
+        <el-input v-model="formValidate.deliverPrice" placeholder="请输入"></el-input>&nbsp;元
       </el-form-item>
-      <el-form-item label="商品缩略图" prop="avatar">
+      <el-form-item label="商品缩略图" prop="thumbnail">
         <upload
-          @on-transport-file-list="handleTransportFileList"
+          @on-transport-file-list="handleTransportThumbnail"
           :max-size="5120"
           :limit="1"
         >
         </upload>
         <span class="upload-tip">*建议上传图片尺寸200*200，上传本地图片，最多1张</span>
       </el-form-item>
-      <el-form-item label="轮播图" prop="avatar">
+      <el-form-item label="轮播图" prop="images">
         <upload
-          @on-transport-file-list="handleTransportFileList"
+          @on-transport-file-list="handleTransportImages"
           :max-size="5120"
           :limit="5"
         >
@@ -70,10 +60,9 @@
 <script>
   import Upload from "@/framework/components/upload";
   import emitter from '@/framework/mixins/emitter'
-  import {save} from '@/project/service/manager'
-
+  import { save } from '@/project/service/product'
+  
   export default {
-    name: "createDialog",
     mixins: [emitter],
     components: {
       Upload
@@ -82,55 +71,106 @@
       dialogVisible: {
         type: Boolean,
         default: false,
+      },
+      brandOptions: {
+        type: Array,
+        default: []
+      },
+      categoryOptions: {
+        type: Array,
+        default: []
+      },
+      stageOptions: {
+        type: Array,
+        default: []
       }
     },
     data() {
+      const validateThumbnail = (rule, value, callback) => {
+        if (this.formValidate.thumbnail === '') {
+          callback("缩略图不能为空");
+        } else {
+          callback();
+        }
+      }
+      const validateImages = (rule, value, callback) => {
+        if (this.formValidate.images === '') {
+          callback("轮播图不能为空");
+        } else {
+          callback();
+        }
+      }
       return {
         // 添加表单校验规则
         ruleValidate: {
-          phone: [
-            {required: true, message: "手机号不能为空", trigger: "blur"}
-          ],
-          nickname: [
-            {required: true, message: "昵称不能为空", trigger: "blur"}
-          ]
+          brand: [{required: true, message: "请选择商品品牌", trigger: "change"}],
+          name: [{required: true, message: "商品名称不能为空", trigger: "blur"}],
+          category: [{required: true, message: "请选择一级分类", trigger: "change"}],
+          position: [{required: true, message: "排序数值不能为空", trigger: "blur"}],
+          thumbnail: [{validator: validateThumbnail}],
+          images: [{validator: validateImages}]
         },
-        model:'manager',
+        model: 'product',
         formValidate: {
-          status: '启用',
-          nickname: '',
-          phone: ''
+          name: '',
+          brand: '',
+          category: '',
+          feedLevel: '',
+          position: 0,
+          thumbnail: '',
+          images: '',
+          deliverPrice: ''
         }
       }
     },
-    computed: {},
     methods: {
       handleClose() {
-        this.$refs.formValidate.resetFields();
-        this.$emit('on-dialog-close');
+        this.$refs.formValidate.resetFields()
+        this.$emit('on-dialog-close')
+        this.broadcast('SiUpload', 'on-close', () => {})
       },
 
       handleConfirm(name) {
         // 通知上传子组件执行相应的操作
-        this.broadcast('SiUpload', 'on-form-submit', () => {});
+        this.broadcast('SiUpload', 'on-form-submit', () => {})
         this.$nextTick(() => {
           this.$refs[name].validate(valid => {
-            if (valid) {
-              save(
-                {[this.model]:this.formValidate},
-                res => {
-                  this.$message.success('添加成功');
-                  this.$refs.formValidate.resetFields();
-                  this.$emit('on-save-success');
-                })
+            if (!valid) return false
+            let param = Object.assign({}, this.formValidate)
+            console.log(param)
+            if (param.feedLevel === '-1') {
+              delete param.feedLevel
             }
+            delete param.deliverPrice
+            param.brand = {id: this.formValidate.brand}
+            param.category = {id: this.formValidate.category}
+            save({[this.model]: param}, res => {
+              this.$message.success('添加成功')
+              this.handleClose()
+              this.$emit('onRefreshData')
+            })
           })
-        });
+        })
       },
 
-      handleTransportFileList(fileList) {
-        console.log(fileList)
-        this.formValidate.avatar = fileList[0].response.data;
+      handleTransportThumbnail(fileList) {
+        if (fileList.length === 0) {
+          this.formValidate.thumbnail = ''
+        } else {
+          this.formValidate.thumbnail = fileList[0].response.data
+        }
+      },
+
+      handleTransportImages(fileList) {
+        if (fileList.length === 0) {
+          this.formValidate.images = ''
+        } else {
+          let imageArr = []
+          for (let i = 0; i < fileList.length; i++) {
+            imageArr.push(fileList[i].response.data)
+          }
+          this.formValidate.images = imageArr.join(';')
+        }
       }
     }
   }

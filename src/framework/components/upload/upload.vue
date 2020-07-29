@@ -130,6 +130,8 @@ export default {
       // this.defaultList.push(file);
       // 深拷贝
       this.defaultList = JSON.parse(JSON.stringify(fileList));
+      this.$emit('on-success-thumbnail', this.defaultList)
+      this.$emit('on-success-images', this.defaultList)
     },
 
     // 预览图片

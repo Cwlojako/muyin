@@ -1,6 +1,7 @@
 import axios from '@/framework/http/axios'
 const model = 'category';
 let searchUrl = `api/${model}/search`;
+let searchCategoryUrl = `api/${model}/search`;
 let countUrl = `api/${model}/count`;
 let saveUrl = `api/${model}/save`;
 let enabledUrl = `api/${model}/enabled`;
@@ -10,6 +11,14 @@ let updateUrl = `api/${model}/update`;
 
 export function search(param, callback) {
   axios.post(searchUrl, param).then(data => {
+    if (data !== undefined && data !== '' && data !== null) {
+      callback(data)
+    }
+  })
+}
+
+export function searchCategory(param, callback) {
+  axios.post(searchCategoryUrl, param).then(data => {
     if (data !== undefined && data !== '' && data !== null) {
       callback(data)
     }

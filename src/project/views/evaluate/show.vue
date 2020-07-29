@@ -97,7 +97,7 @@
 </template>
 
 <script>
-  import { get, disabled, enable} from '@/project/service/evaluation'
+  import { get, disabled, enabled} from '@/project/service/evaluation'
   export default {
     data() {
       return {
@@ -147,7 +147,7 @@
       handleClick(command){
         switch (command) {
           case '状态':
-            let status = evaluation.enabled ? '禁用' : '启用';
+            let status = this.evaluation.enabled ? '禁用' : '启用';
             if (status === '启用') {
               enabled({id: this.id}, res => {
                 this.$message({
