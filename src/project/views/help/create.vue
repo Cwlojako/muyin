@@ -5,13 +5,12 @@
     :modal-append-to-body='false'
     width="60%"
     :before-close="handleClose">
-<!--    <div style="overflow: auto;height:40vh;padding: 10px 0 40px;">-->
     <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
       <el-form-item label="文章名字" prop="title">
         <el-input v-model="formValidate.title" placeholder="请输入"></el-input>
       </el-form-item>
       <el-form-item label="排序数字" prop="position">
-        <el-input-number v-model="formValidate.position" :min="1" :max="1000"></el-input-number>      </el-form-item>
+        <el-input-number v-model="formValidate.position"></el-input-number>      </el-form-item>
       <el-form-item label="图文详情" prop="content">
         <Editor :defaultContent="formValidate.content" @on-change-content="onChangeEditor"/>
       </el-form-item>
@@ -26,16 +25,12 @@
 </template>
 
 <script>
-  import Upload from "@/framework/components/upload";
   import Editor from "@/framework/components/editor"
   import { save } from '@/project/service/page' //接口
-  import Emitter from '@/framework/mixins/emitter'
 
   export default {
-    mixins: [Emitter],
-    name: "creat",
     components: {
-      Upload,Editor
+      Editor
     },
     props: {
       dialogVisible: {
@@ -48,57 +43,45 @@
       }
     },
     data() {
+      const validateContent = (rule, value, callback) => {
+        if (this.formValidate.content === '') {
+          callback("文章内容不能为空");
+        } else {
+          callback();
+        }
+      }
       return {
-        categoryList:[],
-        radio: '1',//1是启用的意思
-        show: false,
-
         formValidate: {
-          label:'help'
+          label: 'help',
+          content: '',
+          title: '',
+          position: 0
         },
         ruleValidate: {
-          title: [{required: true, message: '不能为空', trigger: 'blur'}],
-          position: [{required: true, message: '不能为空', trigger: 'blur'}],
-          content: [{required: true, message: '不能为空', trigger: 'blur'}],
+          title: [{required: true, message: '文章标题不能为空', trigger: 'blur'}],
+          position: [{required: true, message: '文章位置不能为空', trigger: 'blur'}],
+          content: [{validator: validateContent}],
         },
-        model:'page'
+        model: 'page'
       }
     },
-    computed: {},
     methods: {
       onChangeEditor(val){
         this.formValidate.content = val.html;
       },
       handleClose() {
-        // this.visible = false;
         this.$emit('on-dialog-close');
       },
       handleConfirm(name) {
-        this.$nextTick(() => {
           this.$refs[name].validate(valid => {
-            if (valid) {
-              save({[this.model]:this.formValidate},res => {
-                this.$message.success('添加成功');
-                this.$emit('on-save-success');
-              })
-            }
+          if (!valid) return false
+          save({[this.model]: this.formValidate},res => {
+            this.$message.success('添加成功')
+            this.handleClose()
+            this.$emit('onRefreshData')
           })
         });
-
-      },
-      handleTransportFileList(e) {
-        console.log(e)
-        this.formValidate.thumbnail = e[0].response.data
-      },
-      handleTransportFileList2(e) {
-        console.log(e)
-        this.formValidate.blueprint = e[0].response.data
-      },
-
-    },
-
-    created() {
-      // this.findById()
+      }
     }
   }
 </script>
