@@ -22,28 +22,28 @@
           </el-dropdown>
         </div>
         <div class="text-item">
-          <span class="text_label">售卖状态：</span>
+          <span class="text_label">售卖状态：---</span>
         </div>
         <div class="text-item">
-          <span class="text_label">商品名称：</span>
+          <span class="text_label">商品名称：{{product.name}}</span>
         </div>
         <div class="text-item">
-          <span class="text_label">商品分类：</span>
+          <span class="text_label">商品分类：---</span>
         </div>
         <div class="text-item">
-          <span class="text_label">喂养阶段：</span>
+          <span class="text_label">喂养阶段：---</span>
         </div>
         <div class="text-item">
-          <span class="text_label">单笔订单运费：</span>
+          <span class="text_label">单笔订单运费：---</span>
         </div>
         <div class="text-item">
-          <span class="text_label">排序数值：</span>
+          <span class="text_label">排序数值：---</span>
         </div>
         <div class="text-item">
-          <span class="text_label">总销量：</span>
+          <span class="text_label">总销量：---</span>
         </div>
         <div class="text-item">
-          <span class="text_label">总库存：</span>
+          <span class="text_label">总库存：---</span>
         </div>
         <div class="text-item swipeImg-wrapper">
           <span class="text_label swipeImg-wrapper-text">商品缩略图：</span>
@@ -51,15 +51,15 @@
         </div>
         <div class="text-item swipeImg-wrapper">
           <span class="text_label swipeImg-wrapper-text">商品轮播图：</span>
-          <div class="swipeImg-wrapper-img">
-            <img class='img' v-for="item in imgSrc":src="item"></img>
+          <div class="swipeImg-wrapper-img" v-if='product.images'>
+            <img class='img' v-for="(item,index) in product.images.split(';')" :src="`${$store.state.prefix}${item}`" :key='index' @click='showImg(item)'/>
           </div>
         </div>
         <div class="text-item">
-          <span class="text_label">热门状态：</span>
+          <span class="text_label">热门状态：---</span>
         </div>
         <div class="text-item">
-          <span class="text_label">推荐状态：</span>
+          <span class="text_label">推荐状态：---</span>
         </div>
       </el-card>
     </el-col>
@@ -78,26 +78,26 @@
           </el-dropdown>
         </div>
         <!-- 商品规格(销售属性)数据表格 -->
-        <h4>规格设置</h4>
-        <el-col :span="24" class='table-data' stripe>
-          <el-table
-            :data="specData">
-            <el-table-column prop="name" label="规格名称(销售属性)"></el-table-column>
-            <el-table-column prop="value" label="规格值(销售属性)"></el-table-column>
-          </el-table>
-        </el-col>
-        <h4>库存价格管理</h4>
-        <el-col :span="24" class='table-data' stripe>
-          <el-table
-            :data="stockData">
-            <el-table-column prop="color" label="颜色"></el-table-column>
-            <el-table-column prop="value" label="尺码"></el-table-column>
-            <el-table-column prop="sellPrice" label="销售价(元)"></el-table-column>
-            <el-table-column prop="origPrice" label="原价(元)"></el-table-column>
-            <el-table-column prop="stock" label="库存"></el-table-column>
-            <el-table-column prop="img" label="图片"></el-table-column>
-          </el-table>
-        </el-col>
+        <div>
+          <h4>规格设置</h4>
+        </div>
+        <el-table
+          :data="specData">
+          <el-table-column prop="name" label="规格名称(销售属性)"></el-table-column>
+          <el-table-column prop="value" label="规格值(销售属性)"></el-table-column>
+        </el-table>
+        <div>
+          <h4>库存价格管理</h4>
+        </div>
+        <el-table
+          :data="stockData">
+          <el-table-column prop="color" label="颜色"></el-table-column>
+          <el-table-column prop="value" label="尺码"></el-table-column>
+          <el-table-column prop="sellPrice" label="销售价(元)"></el-table-column>
+          <el-table-column prop="origPrice" label="原价(元)"></el-table-column>
+          <el-table-column prop="stock" label="库存"></el-table-column>
+          <el-table-column prop="img" label="图片"></el-table-column>
+        </el-table>
       </el-card>
     </el-col>
     <!--商品批次-->
@@ -178,7 +178,7 @@
           图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情
           图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情</div>
         <div class="good-img">
-          <img :src="avatar" ref="goodsImg">
+          <!-- <img :src="avatar" ref="goodsImg"> -->
         </div>
       </el-card>
     </el-col>
@@ -230,36 +230,35 @@
       @on-dialog-close="handleClose"
       @on-save-success="handleSave">
     </i-create-batch>
-    <!--      <el-dialog-->
-    <!--        title="查看图片"-->
-    <!--        :visible.sync="imgVisible"-->
-    <!--        :modal-append-to-body='false'-->
-    <!--        width="50%"-->
-    <!--        :before-close="handleClose">-->
-    <!--        <img :src="'https://www.gunghobox.com/images/'+manager.avatar" alt="" width="100%">-->
-    <!--      </el-dialog>-->
+    <!-- 查看图片对话框 -->
+    <el-dialog
+      title="查看图片"
+      :visible.sync="imgVisible"
+      :modal-append-to-body='false'
+      width="50%"
+      :before-close="handleClose">
+      <img :src="`${$store.state.prefix}${showImgSrc}`" alt="" width="100%">
+    </el-dialog>
   </div>
 </template>
 
 <script>
-  // import {get, enable, disable, findById} from '@/project/service/user'
-  import { get } from '@/project/service/manager'
+  import { get } from '@/project/service/product'
+  import { searchAttribute } from '@/project/service/attribute'
   import textEdit from './textEdit'
   import IEdit from './edit'
   import ICreateSpec from './createSpec' // 添加商品规格弹框组件
   import ICreateBatch from './createBatch' // 添加商品批次弹框组件
   import search from '@/framework/components/search'
   export default {
-    name: "goodsDetail",
     components: {
       IEdit, ICreateSpec, ICreateBatch, textEdit, search
     },
     data() {
-      return {
-        manager: {},
+      return {  
+        product: {},
         id: this.$route.params.id,
         textEditId: 0,
-        activeName: 'first',
         // 商品基本信息弹框显示隐藏
         editProps: {
           visible: false
@@ -280,28 +279,14 @@
         createBatchProps: {
           visible: false
         },
+        imgVisible: false,
+        showImgSrc: '',
         // 分页组件参数
         pageSize: 10,
         page: 1,
         total: 0,
-        imgSrc: [
-          'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png',
-          'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png',
-          'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png',
-          'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png',
-          'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'
-        ],
         // 商品规格数据列表
-        specData: [
-          {
-            name: '颜色',
-            value: '黑色;白色'
-          },
-          {
-            name: '尺码',
-            value: 'S;M;L;XL'
-          }
-        ],
+        specData: [],
         // 库存数据列表
         stockData: [
           {
@@ -333,18 +318,32 @@
             stock: 50
           }
         ],
-        avatar: '',
         data: []
       }
     },
     created() {
-      this.get();
+      // 获取商品详细信息
+      this.get()
+      // 获取规格值
+      this.getSpec()
     },
     methods: {
+      // 图片预览
+      showImg(src) {
+        this.imgVisible = true
+        this.showImgSrc = src
+      },
+      // 根据商品id获取商品详细信息
       get() {
         get({id: this.id}, res => {
-          this.avatar = `${this.$store.state.prefix}${res.avatar}`
-        });
+          this.product = res
+        })
+      },
+      // 获取商品规格值
+      getSpec() {
+        searchAttribute({product: {id: this.id}}, res => {
+          this.specData = res
+        })
       },
       handleClick(command){
         switch (command) {
@@ -432,6 +431,7 @@
         this.textEditProps.visible = false
         this.createSpecProps.visible = false
         this.createBatchProps.visible = false
+        this.imgVisible = false
       },
       handleSave() {}
     }
@@ -450,10 +450,13 @@
     }
     .swipeImg-wrapper-img {
       flex: 1;
+      display: flex;
+      flex-wrap: wrap;
       .img {
-        margin-right:5px;
-        width: 50px;
-        height: auto;
+        flex: 0 0 50%;
+        width: 50%;
+        box-sizing: border-box;
+        padding: 2px;
       }
     }
   }

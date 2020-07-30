@@ -88,7 +88,6 @@
 <script>
   import Upload from "@/framework/components/upload";
   import Editor from "@/framework/components/editor"
-  import {get,update} from '@/project/service/page'
   import Emitter from '@/framework/mixins/emitter'
 
   export default {

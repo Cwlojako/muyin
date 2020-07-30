@@ -10,6 +10,8 @@ let disableFeaturedUrl = `api/${model}/disableFeatured`;
 let searchUrl = `api/${model}/search`;
 let countUrl = `api/${model}/count`;
 let saveUrl = `api/${model}/save`;
+let getUrl = `api/${model}/get`;
+
 
 // 上架商品
 export function enableSellable(param, callback) {
@@ -91,6 +93,15 @@ export function count(param, callback) {
 
 export function save(param, callback) {
   axios.post(saveUrl, param).then(data => {
+    if (data !== undefined && data !== '' && data !== null) {
+      // callback when data is exist
+      callback(data)
+    }
+  })
+}
+
+export function get(param, callback) {
+  axios.post(getUrl, param).then(data => {
     if (data !== undefined && data !== '' && data !== null) {
       // callback when data is exist
       callback(data)

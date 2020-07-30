@@ -98,10 +98,9 @@
         </el-table-column>
         <el-table-column prop="category" label="商品分类"></el-table-column>
         <el-table-column prop="brand" label="商品品牌"></el-table-column>
-        <el-table-column prop="salePrice" label="售价(元)"  width="120" sortable></el-table-column>
         <el-table-column prop="position" label="排序数值"  width="120" sortable></el-table-column>
         <el-table-column prop="sales" label="销量" width="120" sortable></el-table-column>
-        <el-table-column prop="updateTime"  label="更新时间" width="160" sortable></el-table-column>
+        <el-table-column prop="updateTime"  label="创建时间" width="160" sortable></el-table-column>
         <el-table-column label="推荐状态">
           <template slot-scope="scope">
             {{scope.row.featured ? '是' : '否'}}
@@ -134,15 +133,6 @@
       @on-dialog-close="handleClose"
       @onRefreshData='search(page)'
     />
-
-<!--    &lt;!&ndash;    编辑&ndash;&gt;-->
-<!--    <i-edit-->
-<!--      :dialog-visible="editProps.visible"-->
-<!--      :edit-id="editId"-->
-<!--      @on-dialog-close="handleClose"-->
-<!--    />-->
-
-
   </el-row>
 </template>
 <script>

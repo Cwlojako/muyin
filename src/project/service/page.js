@@ -4,6 +4,7 @@ let getUrl = `api/${model}/get`;
 let searchUrl = `api/${model}/search`;
 let countUrl = `api/${model}/count`;
 let saveUrl = `api/${model}/save`;
+let updateUrl = `api/${model}/update`;
 
 export function get(param, callback) {
   axios.post(getUrl, param).then(data => {
@@ -41,3 +42,11 @@ export function save(param, callback) {
   })
 }
 
+export function update(param, callback) {
+  axios.post(updateUrl, param).then(data => {
+    if (data !== undefined && data !== '' && data !== null) {
+      // callback when data is exist
+      callback(data)
+    }
+  })
+}

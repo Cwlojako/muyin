@@ -18,21 +18,17 @@
           <span class="text_label">广告标题：</span>
           {{page.title}}
         </div>
-        <div class="text-item" style="display: flex;align-items: center">
-          <span class="text_label">广告标签：</span>
-          {{page.label}}
-        </div>
         <div class="text-item">
           <span class="text_label">排列数字：</span>
           {{page.position}}
         </div>
         <div class="text-item">
           <span class="text_label">创建时间：</span>
-          {{page.createAt}}
+          {{page.createTime}}
         </div>
         <div class="text-item">
           <span class="text_label">更新时间：</span>
-          {{page.updateAt}}
+          {{page.updateTime}}
         </div>
       </el-card>
     </el-col>
@@ -41,35 +37,29 @@
         <div slot="header" class='box-card-header'>
           <span class='box-card-header-left'>文章内容</span>
         </div>
-        <div v-html="page.content"></div>
+        <div v-html="page.content" class='box-card-content-left'></div>
       </el-card>
     </el-col>
     <i-edit
       :dialog-visible="editProps.visible"
       @on-dialog-close="handleClose"
-      @on-save-success="handleSave"
+      @onRefreshData="findById"
       :editId="editId"
     />
   </div>
 </template>
 
 <script>
-  import {get} from '@/project/service/page'
+  import { get } from '@/project/service/page'
   import iEdit from './edit'
   export default {
-    name: "show",
     data() {
       return {
-        textarea:'',
-        page: {
-          content: '\u003cb\u003eb\u003c/b\u003e'
-        },
-        id: this.$route.params.id,
-        activeName: 'first',
         editProps:{
-          visible:false
+          visible: false
         },
-        editId:this.$route.params.id,
+        editId: this.$route.params.id,
+        page: {}
       }
     },
     components:{
@@ -78,19 +68,9 @@
     created() {
       this.findById();
     },
-
     methods: {
-      send() {
-        updateComment({storeId: this.id,comment:this.textarea}, res => {
-          this.$message({
-            type: 'success',
-            message: '已提交!'
-          });
-          this.findById();
-        });
-      },
       findById() {
-        get({id: this.id}, res => {
+        get({id: this.editId}, res => {
           this.page = res;
         });
       },
@@ -103,44 +83,13 @@
       },
       handleClose(){
         this.editProps.visible = false
-      },
-      handleSave(){
-        this.findById();
-        this.handleClose();
       }
     }
   }
 </script>
 <style lang="less" scoped>
-  .user-detail {
-    width:100%;
-    height:100%;
-    padding: 20px;
-    box-sizing: border-box;
-    .user-detail-left {
-      padding-right: 10px;
-      box-sizing: border-box;
-      .box-card {
-        margin-bottom: 10px;
-        .box-card-header-right {
-          float: right;
-        }
-        .text-item {
-          padding: 5px 0;
-        }
-        .text-item-avatar {
-          display: flex;
-          align-items: center;
-        }
-      }
-    }
-    .user-detail-right {
-      .tabel-data {
-        margin-top: 5px;
-      }
-    }
-  }
-  .el-card/deep/.el-card__header {
-    padding: 10px 18px;
+  .box-card-content-left/deep/img {
+    display: block;
+    margin: 5px 0;
   }
 </style>

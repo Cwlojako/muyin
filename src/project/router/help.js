@@ -21,7 +21,7 @@ const help = {
       component: () => import('@/project/views/help/list')
     },
     {
-      path:'/help/show',
+      path:'/help/show/:id',
       name:'helpShow',
       meta:{
         isShowHeader:true,
@@ -37,7 +37,7 @@ const help = {
           },
           {
             name:'文章详情',
-            path:'/help/show'
+            path:'/help/show/:id'
           }
         ]
       },
