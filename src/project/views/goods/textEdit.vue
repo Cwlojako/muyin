@@ -22,7 +22,6 @@
 <script>
   import Upload from "@/framework/components/upload";
   import Editor from "@/framework/components/editor"
-  import {get,update} from '@/project/service/page'
   import Emitter from '@/framework/mixins/emitter'
 
   export default {
@@ -80,13 +79,12 @@
         this.formValidate.blueprint = e[0].response.data
       },
       findById() {
-        if (this.id) {
-          get({id:this.id},res => {
-            this.formValidate = res;
-          })
-        }
-
-      },
+        // if (this.id) {
+        //   get({id:this.id},res => {
+        //     this.formValidate = res;
+        //   })
+        // }
+      }
     },
     watch: {
       dialogVisible(e) {

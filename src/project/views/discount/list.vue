@@ -21,8 +21,8 @@
             <el-dropdown-item
               icon="el-icon-circle-check"
               command="启用"
-              :disabled="selectList.findIndex(s=>{return s.status === '启用'}) >=0 || selectList.length === 0"
-              :style="(selectList.findIndex(s=>{return s.status === '启用'}) >=0 || selectList.length === 0)?{'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}"
+              :disabled="selectList.some(item => item.enabled)"
+              :style="selectList.some(item => item.enabled)?{'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}"
               @click="batchEnable"
             >
               启用
@@ -30,8 +30,8 @@
             <el-dropdown-item
               icon="el-icon-circle-close"
               command="禁用"
-              :disabled="selectList.findIndex(s=>{return s.status === '禁用'}) >=0 || selectList.length === 0"
-              :style="(selectList.findIndex(s=>{return s.status === '禁用'}) >=0 || selectList.length === 0)?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}"
+              :disabled="selectList.some(item => !item.enabled)"
+              :style="selectList.some(item => !item.enabled)?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}"
               @click.stop="batchDisable"
             >
               禁用
@@ -74,21 +74,29 @@
               @click.native.prevent="toDetail(scope.row)"
               type="text"
               size="small">
-              {{scope.row.username}}
+              {{scope.row.name}}
             </el-button>
           </template>
         </el-table-column>
         <el-table-column prop="type" label="类型"></el-table-column>
-        <el-table-column prop="faceValue" label="面额"></el-table-column>
-        <el-table-column prop="limit" label="启用条件"></el-table-column>
-        <el-table-column prop="effectTime" label="有效时长"></el-table-column>
-        <el-table-column prop="deadline" label="截止日期"></el-table-column>
+        <el-table-column prop="discount" label="面额"></el-table-column>
+        <el-table-column prop="precondition" label="启用条件"></el-table-column>
+        <el-table-column label="有效时长">
+          <template slot-scope="scope">
+            {{scope.row.endTime | updateTime}}
+          </template>
+        </el-table-column>
+        <el-table-column prop="endTime" label="截止日期"></el-table-column>
         <el-table-column prop="total" label="总量"></el-table-column>
-        <el-table-column prop="exchanged" label="已兑换"></el-table-column>
-        <el-table-column prop="status" label="状态"></el-table-column>
+        <el-table-column prop="usage" label="已兑换"></el-table-column>
+        <el-table-column label="状态">
+          <template slot-scope="scope">
+           {{scope.row.enabled ? '启用' : '禁用'}}
+          </template>
+        </el-table-column>
         <el-table-column fixed="right" label="操作">
           <template slot-scope="scope">
-            <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.status.indexOf('启用') >= 0 ? '禁用' : '启用'}}</el-button>
+            <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.enabled ? '禁用' : '启用'}}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -97,6 +105,7 @@
     <i-create
       :dialog-visible="createProps.visible"
       @on-dialog-close="handleClose"
+      @onRefreshData='search(page)'
     />
     <i-edit
       :dialog-visible="editProps.visible"
@@ -110,13 +119,12 @@
   import ICreate from "./create"
   import IEdit from "./edit"
   import Emitter from '@/framework/mixins/emitter'
-  import {search, count, del, enable, disable} from '@/project/service/manager'
+  import {search, count} from '@/project/service/coupon'
 
   export default {
     mixins: [Emitter],
     data() {
       return {
-        model: "discount",
         createProps: {
           visible: false
         },
@@ -133,7 +141,7 @@
         searchItems: [
           {
             name: "优惠券标题",
-            key: "title",
+            key: "name",
             type: "string"
           },
           {
@@ -152,13 +160,7 @@
     methods: {
       // 控制启禁用
       handleStatusChange(row) {
-        let status;
-        let _t = this;
-        if (row.status.indexOf('启用') >= 0) {
-          status = '禁用'
-        } else {
-          status = '启用'
-        }
+        let status = row.enabled ? '禁用' : '启用'
         this.$confirm(`确定${status}选中内容？`, '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
@@ -166,27 +168,27 @@
         }).then(() => {
           if (status === '禁用') {
             disable({id: row.id}, res => {
-              _t.$message({
+              this.$message({
                 type: 'success',
                 message: '已禁用!'
-              });
-              _t.search(_t.page);
+              })
+              this.search(this.page)
             })
           } else {
             enable({id: row.id}, res => {
-              _t.$message({
+              this.$message({
                 type: 'success',
                 message: '已启用!'
-              });
-              _t.search(_t.page);
+              })
+              this.search(this.page)
             })
           }
         }).catch(() => {
           this.$message({
             type: 'info',
             message: '已取消删除'
-          });
-        });
+          })
+        })
 
       },
 
@@ -216,28 +218,25 @@
       },
 
       search(page) {
-        let _t = this;
-        _t.page = page;
+        this.page = page;
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
+            size: this.pageSize,
+            desc: 'id'
           },
-          manager: _t.extraParam
+          coupon: this.extraParam
         };
         search(param, res => {
-          let data = res;
-          _t.data = data;
-          _t.getTotal();
+          this.data = res
+          this.getTotal()
         });
       },
 
       getTotal() {
-        let _t = this;
-        let param = {manager: _t.extraParam};
+        let param = {coupon: this.extraParam};
         count(param, res => {
-          _t.total = parseInt(res);
+          this.total = parseInt(res);
         });
       },
 
@@ -247,7 +246,6 @@
 
       //批量启用
       batchEnable() {
-        let _t = this;
         let selectList = this.selectList;
         this.$confirm('确定启用所选的记录吗?', '启用提示', {
           confirmButtonText: '确定',
@@ -255,15 +253,13 @@
           type: 'warning'
         }).then(() => {
           selectList.map(s => {
-            enable({id: s.id}, res => {
-              _t.search(_t.page);
-              this.$message({
-                type: 'success',
-                message: '启用成功!'
-              });
-            })
+            enable({id: s.id}, res => {})
           })
-
+          this.search(this.page)
+          this.$message({
+            type: 'success',
+            message: '启用成功!'
+          })
         }).catch(() => {
           this.$message({
             type: 'info',
@@ -274,7 +270,6 @@
 
       //批量禁用
       batchDisable() {
-        let _t = this;
         let selectList = this.selectList;
         this.$confirm('确定启用所选的记录吗?', '启用提示', {
           confirmButtonText: '确定',
@@ -282,15 +277,13 @@
           type: 'warning'
         }).then(() => {
           selectList.map(s => {
-            disable({id: s.id}, res => {
-              _t.search(_t.page);
-              this.$message({
-                type: 'success',
-                message: '禁用成功!'
-              });
-            })
+            disable({id: s.id}, res => {})
           })
-
+          this.search(this.page)
+          this.$message({
+            type: 'success',
+            message: '禁用成功!'
+          })
         }).catch(() => {
           this.$message({
             type: 'info',
@@ -334,11 +327,9 @@
             this.editProps.visible = true;
             break;
           case '启用':
-            console.log('启用');
             this.batchEnable();
             break;
           case '禁用':
-            console.log('禁用')
             this.batchDisable();
             break;
         }
@@ -346,7 +337,6 @@
     },
     mounted() {
       this.search(1);
-      // this.findAllRoles();
     }
   };
 </script>

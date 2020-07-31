@@ -84,7 +84,11 @@
         <el-table
           :data="specData">
           <el-table-column prop="name" label="规格名称(销售属性)"></el-table-column>
-          <el-table-column prop="value" label="规格值(销售属性)"></el-table-column>
+          <el-table-column label="规格值(销售属性)">
+            <template slot-scope='scope'>
+              {{scope.row.valueList | updateList}}
+            </template>
+          </el-table-column>
         </el-table>
         <div>
           <h4>库存价格管理</h4>
@@ -186,7 +190,6 @@
     <i-edit
       :dialog-visible="editProps.visible"
       @on-dialog-close="handleClose"
-      @on-save-success="handleSave"
     />
     <!--商品批次详情弹框-->
     <el-dialog
@@ -222,9 +225,11 @@
     <i-create-spec
       :dialog-visible="createSpecProps.visible"
       @on-dialog-close="handleClose"
+      :defaultSpec='specData'
+      :defaultSpecName='specName'
       @on-save-success="handleSave">
     </i-create-spec>
-    <!--    添加商品批次弹框-->
+    <!--添加商品批次弹框-->
     <i-create-batch
       :dialog-visible="createBatchProps.visible"
       @on-dialog-close="handleClose"
@@ -284,9 +289,10 @@
         // 分页组件参数
         pageSize: 10,
         page: 1,
-        total: 0,
+        total: 0, 
         // 商品规格数据列表
         specData: [],
+        specName: [],
         // 库存数据列表
         stockData: [
           {
@@ -342,7 +348,13 @@
       // 获取商品规格值
       getSpec() {
         searchAttribute({product: {id: this.id}}, res => {
+          console.log(123,res)
           this.specData = res
+          let arr = []
+          res.forEach(item => {
+            arr.push(item.name)
+          })
+          this.specName = arr
         })
       },
       handleClick(command){
@@ -433,7 +445,16 @@
         this.createBatchProps.visible = false
         this.imgVisible = false
       },
-      handleSave() {}
+      handleSave() {},
+    },
+    filters: {
+      updateList(val) {
+        let str = []
+        val.forEach(item => {
+          str.push(item.text)
+        })
+        return str.join(';')
+      }
     }
   }
 </script>
