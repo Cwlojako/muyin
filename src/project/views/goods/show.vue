@@ -47,7 +47,9 @@
         </div>
         <div class="text-item swipeImg-wrapper">
           <span class="text_label swipeImg-wrapper-text">商品缩略图：</span>
-          <img class='swipeImg-wrapper-img' :src="'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png'"></img>
+          <div class="swipeImg-wrapper-img" v-if='product.images'>
+            <img class='img' v-for="(item,index) in product.images.split(';')" :src="`${$store.state.prefix}${item}`" :key='index' @click='showImg(item)'/>
+          </div>
         </div>
         <div class="text-item swipeImg-wrapper">
           <span class="text_label swipeImg-wrapper-text">商品轮播图：</span>
@@ -162,7 +164,7 @@
       </el-card>
     </el-col>
     <!--图文详情-->
-    <el-col :span="18" class='user-detail-right'>
+    <el-col :span="18" class='user-detail-right' style='float: right;'>
       <el-card>
         <div slot="header" class='box-card-header'>
           <span class='box-card-header-left'>图文详情</span>
@@ -225,9 +227,10 @@
     <i-create-spec
       :dialog-visible="createSpecProps.visible"
       @on-dialog-close="handleClose"
-      :defaultSpec='specData'
-      :defaultSpecName='specName'
-      @on-save-success="handleSave">
+      :active='1'
+      :editId='id'
+      @on-save-success="handleSave"
+      @handleShowSpec='handleShowSpec'>
     </i-create-spec>
     <!--添加商品批次弹框-->
     <i-create-batch
@@ -292,7 +295,6 @@
         total: 0, 
         // 商品规格数据列表
         specData: [],
-        specName: [],
         // 库存数据列表
         stockData: [
           {
@@ -330,8 +332,11 @@
     created() {
       // 获取商品详细信息
       this.get()
-      // 获取规格值
-      this.getSpec()
+
+      // 从缓存中获取商品规格值
+      if (localStorage.getItem(`Good${this.id}`)) {
+        this.specData = JSON.parse(localStorage.getItem(`Good${this.id}`))
+      }
     },
     methods: {
       // 图片预览
@@ -339,22 +344,23 @@
         this.imgVisible = true
         this.showImgSrc = src
       },
+      // 显示勾选的规格值
+      handleShowSpec(checkList) {
+        this.specData = []
+        let specNameArr = Object.keys(checkList)
+        specNameArr.forEach(item => {
+          let param = {}
+          param.name = item
+          param.valueList = checkList[item]
+          this.specData.push(param)
+        })
+        localStorage.setItem(`Good${this.id}`, JSON.stringify(this.specData))
+        console.log(this.specData)
+      },
       // 根据商品id获取商品详细信息
       get() {
         get({id: this.id}, res => {
           this.product = res
-        })
-      },
-      // 获取商品规格值
-      getSpec() {
-        searchAttribute({product: {id: this.id}}, res => {
-          console.log(123,res)
-          this.specData = res
-          let arr = []
-          res.forEach(item => {
-            arr.push(item.name)
-          })
-          this.specName = arr
         })
       },
       handleClick(command){
@@ -366,7 +372,7 @@
             this.textEditProps.visible = true
             break;
           case '添加规格':
-            this.createSpecProps.visible = true
+            this.createSpecProps.visible = true            
             break;
           case '添加批次':
             this.createBatchProps.visible = true
@@ -451,7 +457,7 @@
       updateList(val) {
         let str = []
         val.forEach(item => {
-          str.push(item.text)
+          str.push(item)
         })
         return str.join(';')
       }

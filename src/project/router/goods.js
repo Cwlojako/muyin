@@ -26,7 +26,7 @@ const goods = {
       meta:{
         isShowHeader:true,
         isShowLeftSider:true,
-        keepAlive:false,
+        keepAlive:true,
         breadcrumb: [
           {
             name:'首页',

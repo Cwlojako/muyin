@@ -7,7 +7,7 @@
       :modal-append-to-body='false'
       width="60%"
       :before-close="handleClose">
-      <div style="overflow: auto;height:30vh;padding: 10px 0 40px;" v-if="active === 1">
+      <div style="overflow: auto;height:30vh;padding: 10px 0 40px;" v-if="currentActive === 1">
         <el-button type="primary" @click='addSpecItem'>添加规格</el-button>
         <el-col :span="24" class='table-data'>
           <el-table
@@ -29,9 +29,9 @@
           </el-table>
         </el-col>
       </div>
-      <div v-if="active === 2">
+      <div v-if="currentActive === 2">
         <h4>库存价格管理</h4>
-        <el-form v-show="active === 2" inline>
+        <el-form inline>
           <el-form-item label="销售价" prop="sellPrice">
             <el-input v-model="formValidate.sellPrice" placeholder="请输入销售价"></el-input>
           </el-form-item>
@@ -66,9 +66,9 @@
         </el-table>
       </div>
       <div slot="footer" class="dialog-footer">
-        <el-button type="info" @click="active = 1" v-if="active === 2">上一步</el-button>
-        <el-button type="info" @click="next" v-if="active === 1">下一步</el-button>
-        <el-button type="primary" @click="handleConfirm('formValidate')" v-if="active === 2">确 定</el-button>
+        <el-button type="info" @click="currentActive = 1" v-if="currentActive === 2">上一步</el-button>
+        <el-button type="info" @click="next" v-if="currentActive === 1">下一步</el-button>
+        <el-button type="primary" @click="handleConfirm('formValidate')" v-if="currentActive === 2">确 定</el-button>
       </div>
     </el-dialog>
     <!-- 添加规格条目弹框 -->
@@ -116,8 +116,10 @@
   import Upload from "@/framework/components/upload";
   import {save} from '@/project/service/slide';
   import {search, count} from "@/project/service/store"
+  import { searchAttribute } from '@/project/service/attribute'
  
   export default {
+    name: 'createSpec',
     components: {
       Upload
     },
@@ -126,54 +128,57 @@
         type: Boolean,
         default: false,
       },
-      defaultSpec: {
-        type: Array,
-        default() {
-          return []
-        }
+      active: {
+        type: Number,
+        default: 1
       },
-      defaultSpecName: {
-        type: Array,
-        default() {
-          return []
-        }
+      editId: {
+        type: [Number, String]
       }
     },
     watch: {
       dialogVisible(val) {
         if (val) {
-          this.defaultSpecName.forEach(item => {
-            // this.checkList[item] = []
-            this.$set(this.checkList, item, [])
-          })
+          // 重置数据
           this.specData = []
-          this.defaultSpec.forEach(item => {
-            let param = {}
-            param.name = item.name
-            let value = []
-            item.valueList.forEach(item1 => {
-              value.push(item1.text)
+          this.currentActive = this.active
+          // 获取商品规格值
+          searchAttribute({product: {id: this.editId}}, res => {
+            res.forEach(item => {
+              let param = {}
+              param.name = item.name
+              let value = []
+              item.valueList.forEach(item1 => {
+                value.push(item1.text)
+              })
+              param.value = value
+              this.specData.push(param)
             })
-            param.value = value
-            /*
-            param
-              {
-                name: '',           //规格名
-                value: [''， '']    //选项
-              }
-            */
-            this.specData.push(param)
+            let arr = []
+            res.forEach(item => {
+              arr.push(item.name)
+            })
+            // 初始化checkbox组绑定数组
+            arr.forEach(item => {
+              this.$set(this.checkList, item, [])
+            })
+            // 打开时勾选父组件已显示的规格值
+            let defaultCheckList = JSON.parse(localStorage.getItem(`Good${this.editId}`))
+            if (defaultCheckList) {
+              defaultCheckList.forEach(item => {
+                if (item.valueList.length > 0) {
+                  this.checkList[item.name].push(...item.valueList)
+                }
+              })
+              console.log(this.checkList)
+            }
           })
-          console.log('specData', this.specData);
-          console.log('defaultSpecName', this.defaultSpecName);
-          console.log('checkList', this.checkList);
-          
         }
       }
     },
     data() {
       return {
-        active: 1,
+        currentActive: null,
         // 规格数据列表
         specData: [],
         // 库存管理列表
@@ -186,15 +191,12 @@
           sellPrice: null,
           stock: null,
           origPrice: null,
-          SKU: ''
         },
         specFormValidate: {
           name: '',
           goodsList: []
         },
         // 各checkbox组绑定的数据
-        // '颜色': [],
-          // '尺码': []
         checkList: {},
         specRuleValidate: {
           name: [{required: true, message: '规格名称不能为空', trigger: 'blur'}]
@@ -209,17 +211,17 @@
     },
     methods: {
       next() {
-        this.active = 2
+        this.currentActive = 2
         // 发送保存规格请求
+        // this.$emit('handleShowSpec', this.checkList)
       },
       change(val) {
-        console.log('康康改变的值', val)
-        console.log('康康最终结果',this.checkList);
+        console.log(this.checkList)
       },
       addSpecItem() {
         this.addSpecItemVisible = true
         this.type = '添加'
-        console.log(this.defaultSpec)
+        this.specFormValidate.name = ''
       },
       // 本地删除当前规格
       deleteSpec(name) {
@@ -251,6 +253,7 @@
         if (type === '添加') {
           this.addSpecItemVisible = false
           this.specData.push(param)
+          this.$set(this.checkList, this.specFormValidate.name, [])
         } else {
           this.specData.splice(this.updateIndex, 1)
           this.specData.splice(this.updateIndex, 0, param)
