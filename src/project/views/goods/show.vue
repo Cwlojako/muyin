@@ -395,7 +395,8 @@
       handleAddSpec(type) {
         let param = {
           name: this.specFormValidate.name,
-          value: this.dynamicTags
+          value: this.dynamicTags,
+          id: this.attributeId
         }
         this.$refs.specFormValidate.validate(valid => {
           if (type === '添加') {
@@ -428,6 +429,7 @@
                 this.addSpecItemVisible = false
                 this.specData.splice(this.updateIndex, 1)
                 this.specData.splice(this.updateIndex, 0, param)
+                console.log(this.attributeId)
                 // 发送更新编辑规格请求
                 update({attribute: {id: this.attributeId, name: this.specFormValidate.name}}, res => {
                   this.$message.success('编辑规格成功')
@@ -485,6 +487,7 @@
       showAddSpec() {
         this.addSpecItemVisible = true
         this.type = '添加'
+        this.dynamicTags = []
         this.specFormValidate.name = ''
       },
       // 显示编辑规格弹框
@@ -499,10 +502,21 @@
       },
       // 删除规格
       deleteSpec(row) {
-        this.specData.splice(this.specData.findIndex(item => item.id === row.id), 1)
-        // 删除规格请求
-        deleteById({id: row.id}, res => {
-          this.$message.success('删除规格成功')
+        this.$confirm(`确定删除该条规格属性吗？`, '删除提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.specData.splice(this.specData.findIndex(item => item.id === row.id), 1)
+          // 删除规格请求
+          deleteById({id: row.id}, res => {
+            this.$message.success('删除规格成功')
+          })
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消删除'
+          })
         })
       },
       // 关闭新增规格弹框
@@ -510,6 +524,7 @@
         this.addSpecItemVisible = false
         this.dynamicTags = []
         this.$refs.specFormValidate.resetFields()
+        this.inputVisible = false
       },
       // 图片预览
       showImg(src) {
@@ -520,7 +535,6 @@
         searchAttribute({product: {id: this.id}}, res => {
           this.attributeData = res
           res.forEach(item => {
-            console.log(item)
             let param = {}
             param.name = item.name
             param.id = item.id

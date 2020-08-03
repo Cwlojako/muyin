@@ -43,8 +43,11 @@
         <el-table
           :data="stockData"
           class="table-data">
-          <el-table-column prop="color" label="颜色"></el-table-column>
-          <el-table-column prop="size" label="尺码"></el-table-column>
+          <el-table-column :label="item" v-for='(item, index) in Object.keys(copyCheckList)' :key='index'>
+            <template slot-scope='scope'>
+
+            </template>
+          </el-table-column>
           <el-table-column prop="sellPrice" label="销售价">
             <el-input v-model="sellPrice" placeholder="请输入" class="stock-input"></el-input>
           </el-table-column>
@@ -58,7 +61,7 @@
                 action="/api/attachment/upload"
                 :show-file-list="false"
                 :on-success="handleSuccess">
-                <img :src="imageUrl" v-if="imageUrl"/>
+                <img :src="`${$store.state.prefix}${imageUrl}`" v-if="imageUrl" width='50' height='50'/>
                 <el-link v-else type="primary">请选择</el-link>
               </el-upload>
             </template>
@@ -66,7 +69,7 @@
         </el-table>
       </div>
       <div slot="footer" class="dialog-footer">
-        <el-button type="info" @click="currentActive = 1" v-if="currentActive === 2">上一步</el-button>
+        <el-button type="info" @click="prev" v-if="currentActive === 2">上一步</el-button>
         <el-button type="info" @click="next" v-if="currentActive === 1">下一步</el-button>
         <el-button type="primary" @click="handleConfirm('formValidate')" v-if="currentActive === 2">确 定</el-button>
       </div>
@@ -150,25 +153,15 @@
               })
               param.value = value
               this.specData.push(param)
+              // 初始化checkbox组绑定数组
+              this.$set(this.checkList, item.name, [])
+              // 打开时默认勾选已添加的规格值
+              if (item.valueList.length > 0) {
+                item.valueList.forEach(i => {
+                  this.checkList[item.name].push(i.text)
+                })
+              }
             })
-            let arr = []
-            res.forEach(item => {
-              arr.push(item.name)
-            })
-            // 初始化checkbox组绑定数组
-            arr.forEach(item => {
-              this.$set(this.checkList, item, [])
-            })
-            // 打开时勾选父组件已显示的规格值
-            let defaultCheckList = JSON.parse(localStorage.getItem(`Good${this.editId}`))
-            if (defaultCheckList) {
-              defaultCheckList.forEach(item => {
-                if (item.valueList.length > 0) {
-                  this.checkList[item.name].push(...item.valueList)
-                }
-              })
-              console.log(this.checkList)
-            }
           })
         }
       }
@@ -195,6 +188,7 @@
         },
         // 各checkbox组绑定的数据
         checkList: {},
+        copyCheckList: {},
         specRuleValidate: {
           name: [{required: true, message: '规格名称不能为空', trigger: 'blur'}]
         },
@@ -207,14 +201,38 @@
         // 当前编辑规格的id
         attributeId: null,
         // 所有规格条目数据
-        attributeData: []
+        attributeData: [],
+        // 上传图片路径
+        imageUrl: ''
       }
     },
     methods: {
+      prev() {
+        this.currentActive = 1
+        this.stockData = []
+      },
+      // 下一步
       next() {
         this.currentActive = 2
-        // 发送保存规格请求
-        // this.$emit('handleShowSpec', this.checkList)
+        // 深拷贝一份选中的checkbox
+        this.copyCheckList = Object.assign({}, this.checkList)
+        this.specNameArr = Object.keys(this.copyCheckList)
+        this.specNameArr.forEach(item => {
+          if (this.copyCheckList[item].length === 0) {
+            delete this.copyCheckList[item]
+          }
+        })
+        // 生成"下一步"中库存/销售价表格数据
+        let specValueArr = Object.values(this.copyCheckList)
+        // 总共会生成多少条数据
+        let stockLength = 1
+        for(let i = 0; i < specValueArr.length; i++) {
+          stockLength *= specValueArr[i].length
+        }
+        console.log(stockLength)
+        for(let i = 0; i < stockLength; i++) {
+          this.stockData.push({})
+        }
       },
       change(val) {
         console.log(this.checkList)
@@ -340,6 +358,10 @@
             })
           }
         }
+      },
+      // 上传图片成功
+      handleSuccess(val) {
+        this.imageUrl = val.data
       }
     }
   }

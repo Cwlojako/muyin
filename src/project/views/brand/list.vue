@@ -193,8 +193,8 @@
           this.$message({
             type: 'info',
             message: '已取消删除'
-          });
-        });
+          })
+        })
       },
 
       searchBySearchItem(searchItems) {
