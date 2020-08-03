@@ -78,10 +78,14 @@
           </template>
         </el-table-column>
         <el-table-column prop="initial" label="首字母"></el-table-column>
-        <el-table-column prop="status" label="状态"></el-table-column>
+        <el-table-column label="状态">
+          <template slot-scope="scope">
+            {{scope.row.enabled ? '启用' : '禁用'}}
+          </template>
+        </el-table-column>
         <el-table-column fixed="right" align="center" label="操作" width="200">
           <template slot-scope="scope">
-            <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.status.indexOf('启用') >= 0 ? '禁用' : '启用'}}</el-button>
+            <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.enabled ? '禁用' : '启用'}}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -111,13 +115,13 @@
   import Search from "@/framework/components/search";
   import {post} from "@/framework/http/request";
   import Emitter from '@/framework/mixins/emitter'
-  import {search, count, del, enable, disable} from '@/project/service/manager'
+  import {search, count} from '@/project/service/courier'
 
   export default {
     mixins: [Emitter],
     data() {
       return {
-        model: "manager",
+        model: "courier",
         createProps: {
           visible: false
         },
@@ -130,7 +134,6 @@
         editId: 0,//编辑id
         managerList: [],
         selectList: [],
-        sort: {asc: [], desc: []},
         pageSize: 10,
         page: 1,
         total: 0,
@@ -143,7 +146,7 @@
           },
           {
             name: "状态",
-            key: "status",
+            key: "enabled",
             type: "select",
             displayValue: ["禁用", "启用"],
             value: ["禁用", "启用"]

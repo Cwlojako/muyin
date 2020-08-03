@@ -66,7 +66,7 @@
   import Search from "@/framework/components/search";
   import {post} from "@/framework/http/request";
   import Emitter from '@/framework/mixins/emitter'
-  import {search, count, del, enable, disable} from '@/project/service/manager'
+  import {search, count} from '@/project/service/order'
 
   export default {
     mixins: [Emitter],
@@ -156,28 +156,24 @@
       },
 
       search(page) {
-        let _t = this;
-        _t.page = page;
+        this.page = page;
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
+            size: this.pageSize
           },
-          manager: _t.extraParam
+          order: this.extraParam
         };
         search(param, res => {
-          let data = res;
-          _t.data = data;
-          _t.getTotal();
+          this.data = res;
+          this.getTotal();
         });
       },
 
       getTotal() {
-        let _t = this;
-        let param = {manager: _t.extraParam};
+        let param = {manager: this.extraParam};
         count(param, res => {
-          _t.total = parseInt(res);
+          this.total = parseInt(res);
         });
       },
 

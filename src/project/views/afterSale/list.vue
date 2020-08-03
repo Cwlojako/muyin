@@ -72,21 +72,17 @@
   import Search from "@/framework/components/search";
   import {post} from "@/framework/http/request";
   import Emitter from '@/framework/mixins/emitter'
-  // user接口
-  import {search, count, del, enable, disable} from '@/project/service/manager'
+  import {search, count} from '@/project/service/issue'
 
   export default {
     mixins: [Emitter],
     data() {
       return {
-        model: "manager",
+        model: "issue",
         createProps: {
           visible: false
         },
         editProps: {
-          visible: false
-        },
-        menu: {
           visible: false
         },
         editId: 0,//编辑id
@@ -205,75 +201,6 @@
       Search
     },
     methods: {
-      // handleEdit() {
-      //   this.editId = this.selectList[0].id
-      //   this.editProps.visible = true;
-      // },
-      // 控制启禁用
-      exportExcel () {},
-      handleStatusChange(row) {
-        let status;
-        let _t = this;
-        if (row.status.indexOf('启用') >= 0) {
-          status = '禁用'
-        } else {
-          status = '启用'
-        }
-        this.$confirm(`确定${status}选中内容？`, '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          if (status === '禁用') {
-            disable({id: row.id}, res => {
-              _t.$message({
-                type: 'success',
-                message: '已禁用!'
-              });
-              _t.search(_t.page);
-            })
-          } else {
-            enable({id: row.id}, res => {
-              _t.$message({
-                type: 'success',
-                message: '已启用!'
-              });
-              _t.search(_t.page);
-            })
-          }
-        }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消删除'
-          });
-        });
-
-      },
-      // handlePageSizeChange(pageSize) {
-      //   this.pageSize = pageSize;
-      //   this.search(1);
-      // },
-      // handlePageChange(page) {
-      //   this.search(page);
-      // },
-      // handleSortChange(sort) {
-      //   let key = sort.key;
-      //   let order = sort.order;
-      //   let asc = this.sort.asc;
-      //   let desc = this.sort.desc;
-      //   if (asc.indexOf(key) > -1) {
-      //     let idx = asc.indexOf(key);
-      //     asc.splice(idx, 1);
-      //   }
-      //   if (desc.indexOf(key) > -1) {
-      //     let idx = desc.indexOf(key);
-      //     desc.splice(idx, 1);
-      //   }
-      //   if (order !== "normal") {
-      //     this.sort[order].push(key);
-      //   }
-      //   this.search(1);
-      // },
       searchBySearchItem(searchItems) {
         let keys = [];
         for (
@@ -300,100 +227,29 @@
       },
 
       search(page) {
-        let _t = this;
-        _t.page = page;
+        this.page = page;
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
+            size: this.pageSize
           },
-          [this.model]: _t.extraParam
-        };
-        if (
-          param.pageable.sort.asc.length === 0 &&
-          param.pageable.sort.desc.length === 0
-        ) {
-          delete param.pageable.sort;
+          [this.model]: this.extraParam
         }
         search(param, res => {
-          let data = res;
-          _t.data = data;
-          _t.getTotal();
+          this.data = res;
+          this.getTotal();
         });
       },
 
       getTotal() {
-        let _t = this;
-        let param = {[this.model]: _t.extraParam};
+        let param = {[this.model]: this.extraParam};
         count(param, res => {
-          _t.total = parseInt(res);
+          this.total = parseInt(res);
         });
       },
 
       handleTransportSelectList(list) {
         this.selectList = list;
-      },
-
-      //批量启用
-      batchEnable() {
-        let _t = this;
-        let selectList = this.selectList;
-        this.$confirm('确定启用所选的记录吗?', '启用提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          selectList.map(s => {
-            enable({id: s.id}, res => {
-              _t.search(_t.page);
-              // this.$message({
-              //   type: 'success',
-              //   message: '删除成功!'
-              // });
-            })
-          })
-
-        }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消'
-          });
-        });
-      },
-
-      //批量禁用
-      batchDisable() {
-        let _t = this;
-        let selectList = this.selectList;
-        this.$confirm('确定启用所选的记录吗?', '启用提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          selectList.map(s => {
-            disable({id: s.id}, res => {
-              _t.search(_t.page);
-              // this.$message({
-              //   type: 'success',
-              //   message: '删除成功!'
-              // });
-            })
-          })
-
-        }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消'
-          });
-        });
-      },
-
-      enable(id, url) {
-        let _t = this;
-        post(url, {id: id}, res => {
-          _t.search(_t.page);
-        });
       },
 
       handleClose() {
@@ -440,29 +296,10 @@
       handleSizeChange(pageSize) {
         this.pageSize = pageSize;
         this.search(this.page);
-      },
-
-      handleClick(command) {
-        switch (command) {
-          case '编辑':
-            console.log('编辑');
-            this.editId = this.selectList[0].id;
-            this.editProps.visible = true;
-            break;
-          case '启用':
-            console.log('启用');
-            this.batchEnable();
-            break;
-          case '禁用':
-            console.log('禁用')
-            this.batchDisable();
-            break;
-        }
       }
     },
     mounted() {
       this.search(1);
-      // this.findAllRoles();
     }
   };
 </script>

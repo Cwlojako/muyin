@@ -73,56 +73,51 @@
     </el-dialog>
     <!-- 添加规格条目弹框 -->
     <el-dialog
-    :title='type === "编辑" ? "编辑规格" : "添加规格"'
-    :visible.sync="addSpecItemVisible"
-    :modal-append-to-body='false'
-    width="40%"
-    top='25vh'
-    :before-close="handleCloseAddSpec">
-    <el-form ref='specFormValidate' :model="specFormValidate" :rules="specRuleValidate" label-width="80px">
-      <el-form-item label="规格名称" prop="name">
-        <el-input v-model="specFormValidate.name" placeholder="请输入规格名称"></el-input>
-      </el-form-item>
-      <el-form-item label="规格值" prop="goodsList">
-        <el-tag
-          :key="tag"
-          v-for="tag in dynamicTags"
-          closable
-          :disable-transitions="false"
-          @close="handleDelete(tag)">
-          {{tag}}
-        </el-tag>
-        <el-input
-          class="input-new-tag"
-          v-if="inputVisible"
-          v-model="inputValue"
-          ref="saveTagInput"
-          size="small"
-          @keyup.enter.native="handleInputConfirm"
-          @blur="handleInputConfirm">
-        </el-input>
-        <el-button v-else class="button-new-tag" size="small" @click="showInput">添加规格值 (输入后请按回车键)</el-button>
-      </el-form-item>
-    </el-form>
-    <div slot="footer" class="dialog-footer">
-      <el-button type="info" @click="handleCloseAddSpec">取消</el-button>
-      <el-button type="primary" @click="handleAddSpec(type)">确 定</el-button>
-    </div>
-  </el-dialog>
+      :title='type === "编辑" ? "编辑规格" : "添加规格"'
+      :visible.sync="addSpecItemVisible"
+      :modal-append-to-body='false'
+      width="40%"
+      top='25vh'
+      :before-close="handleCloseAddSpec">
+      <el-form ref='specFormValidate' :model="specFormValidate" :rules="specRuleValidate" label-width="80px">
+        <el-form-item label="规格名称" prop="name">
+          <el-input v-model="specFormValidate.name" placeholder="请输入规格名称"></el-input>
+        </el-form-item>
+        <el-form-item label="规格值" prop="goodsList">
+          <el-tag
+            :key="index"
+            v-for="(tag, index) in dynamicTags"
+            closable
+            :disable-transitions="false"
+            @close="handleDelete(tag)">
+            {{tag}}
+          </el-tag>
+          <el-input
+            class="input-new-tag"
+            v-if="inputVisible"
+            v-model="inputValue"
+            ref="saveTagInput"
+            size="small"
+            @keyup.enter.native="handleInputConfirm"
+            @blur="handleInputConfirm">
+          </el-input>
+          <el-button v-else class="button-new-tag" size="small" @click="showInput">添加规格值 (输入后请按回车键)</el-button>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="info" @click="handleCloseAddSpec">取消</el-button>
+        <el-button type="primary" @click="handleAddSpec(type)">确 定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-  import Upload from "@/framework/components/upload";
-  import {save} from '@/project/service/slide';
-  import {search, count} from "@/project/service/store"
-  import { searchAttribute } from '@/project/service/attribute'
+  import { searchAttribute, save, deleteById, update } from '@/project/service/attribute'
+  import { saveValue, deleteValueById } from '@/project/service/value'
  
   export default {
     name: 'createSpec',
-    components: {
-      Upload
-    },
     props: {
       dialogVisible: {
         type: Boolean,
@@ -144,9 +139,11 @@
           this.currentActive = this.active
           // 获取商品规格值
           searchAttribute({product: {id: this.editId}}, res => {
+            this.attributeData = res
             res.forEach(item => {
               let param = {}
               param.name = item.name
+              param.id = item.id
               let value = []
               item.valueList.forEach(item1 => {
                 value.push(item1.text)
@@ -206,7 +203,11 @@
         inputVisible: false,
         inputValue: '',
         // 添加或者编辑规格（“添加”，“编辑”）
-        type: '添加'
+        type: '添加',
+        // 当前编辑规格的id
+        attributeId: null,
+        // 所有规格条目数据
+        attributeData: []
       }
     },
     methods: {
@@ -225,7 +226,12 @@
       },
       // 本地删除当前规格
       deleteSpec(name) {
+        let deleteId = this.specData.find(item => item.name === name).id
         this.specData.splice(this.specData.findIndex(item => item.name === name), 1)
+        // 删除规格请求
+        deleteById({id: deleteId}, res => {
+          this.$message.success('删除规格成功')
+        })
       },
       // 本地编辑当前规格
       updateSpec(row) {
@@ -235,6 +241,7 @@
         this.dynamicTags = row.value
         // 记录当前修改行的index
         this.updateIndex = this.specData.findIndex(item => item.name === row.name)
+        this.attributeId = row.id
       },
       handleClose() {
         this.$emit('on-dialog-close')
@@ -244,27 +251,65 @@
         this.dynamicTags = []
         this.$refs.specFormValidate.resetFields()
       },
-      // 确认添加规格条目
+      // 确认添加规格条目或编辑规格条目
       handleAddSpec(type) {
         let param = {
           name: this.specFormValidate.name,
           value: this.dynamicTags
         }
         if (type === '添加') {
-          this.addSpecItemVisible = false
-          this.specData.push(param)
-          this.$set(this.checkList, this.specFormValidate.name, [])
+          this.$refs.specFormValidate.validate(valid => {
+            if (valid) {
+              this.addSpecItemVisible = false
+              this.specData.push(param)
+              this.$set(this.checkList, this.specFormValidate.name, [])
+              let valueList = []
+              this.dynamicTags.map(item => {
+                valueList.push({name: item, text: item})
+              })
+              let addParam = {
+                name: this.specFormValidate.name,
+                type: 'product',
+                ordinary: false,
+                product: {
+                  id: this.editId
+                },
+                valueList
+              }
+              // 发送添加规格属性请求
+              save({attribute: addParam}, res => {
+                this.$message.success('添加规格成功')
+              })
+              this.dynamicTags = []
+              this.specFormValidate.name = ''
+            }
+          })
         } else {
-          this.specData.splice(this.updateIndex, 1)
-          this.specData.splice(this.updateIndex, 0, param)
+          this.$refs.specFormValidate.validate(valid => {
+            if (valid) {
+              this.addSpecItemVisible = false
+              this.specData.splice(this.updateIndex, 1)
+              this.specData.splice(this.updateIndex, 0, param)
+              // 发送更新编辑规格请求
+              update({attribute: {id: this.attributeId, name: this.specFormValidate.name}}, res => {
+                this.$message.success('编辑规格成功')
+              })
+            }
+          })
         }
-        this.addSpecItemVisible = false
-        this.dynamicTags = []
-        this.specFormValidate.name = ''
       },
-
+      // 删除规格值
       handleDelete(tag) {
-        this.dynamicTags.splice(this.dynamicTags.indexOf(tag), 1);
+        console.log(tag)
+        this.dynamicTags.splice(this.dynamicTags.indexOf(tag), 1)
+        let valueList = this.attributeData.find(item => item.id === this.attributeId).valueList
+        let filterValueList = valueList.filter(item => item.text === tag)
+        // 默认删除最后添加并且重复的一个
+        let valueId = filterValueList[filterValueList.length - 1].id
+        // 发送删除规格值请求
+        deleteValueById({id: valueId}, res => {
+          this.$message.success('删除规格值成功')
+        })
       },
       showInput() {
         this.inputVisible = true;
@@ -273,12 +318,28 @@
         });
       },
       handleInputConfirm() {
-        let inputValue = this.inputValue;
+        let inputValue = this.inputValue
         if (inputValue) {
-          this.dynamicTags.push(inputValue);
+          // 添加规格值
+          if (this.type === '添加') {
+            this.dynamicTags.push(inputValue)
+            this.inputVisible = false
+            this.inputValue = ''
+          } else {
+            this.dynamicTags.push(inputValue)
+            // 发送添加规格值请求
+            let param = {
+              attribute: {id: this.attributeId},
+              text: this.inputValue,
+              name: this.inputValue
+            }
+            saveValue({value: param}, res => {
+              this.$message.success('添加规格值成功')
+              this.inputVisible = false
+              this.inputValue = ''
+            })
+          }
         }
-        this.inputVisible = false;
-        this.inputValue = '';
       }
     }
   }
