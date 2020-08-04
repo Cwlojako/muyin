@@ -43,10 +43,7 @@
         <el-table
           :data="stockData"
           class="table-data">
-          <el-table-column :label="item" v-for='(item, index) in Object.keys(copyCheckList)' :key='index'>
-            <template slot-scope='scope'>
-
-            </template>
+          <el-table-column :prop='item' :label="item" v-for='(item, index) in Object.keys(copyCheckList)' :key='index'>
           </el-table-column>
           <el-table-column prop="sellPrice" label="销售价">
             <el-input v-model="sellPrice" placeholder="请输入" class="stock-input"></el-input>
@@ -61,8 +58,8 @@
                 action="/api/attachment/upload"
                 :show-file-list="false"
                 :on-success="handleSuccess">
-                <img :src="`${$store.state.prefix}${imageUrl}`" v-if="imageUrl" width='50' height='50'/>
-                <el-link v-else type="primary">请选择</el-link>
+                <img :src="`${$store.state.prefix}${imageUrlArr[scope.row.id]}`" v-if="imageUrlArr[scope.row.id]" width='50' height='50'/>
+                <el-link v-else type="primary" @click='handleUpload(scope.row.id)'>请选择</el-link>
               </el-upload>
             </template>
           </el-table-column>
@@ -202,14 +199,17 @@
         attributeId: null,
         // 所有规格条目数据
         attributeData: [],
-        // 上传图片路径
-        imageUrl: ''
+        // 上传图片路径数组
+        imageUrlArr: [],
+        // 上传图片当前行id
+        uploadId: null
       }
     },
     methods: {
       prev() {
         this.currentActive = 1
         this.stockData = []
+        this.imageUrlArr = []
       },
       // 下一步
       next() {
@@ -217,22 +217,38 @@
         // 深拷贝一份选中的checkbox
         this.copyCheckList = Object.assign({}, this.checkList)
         this.specNameArr = Object.keys(this.copyCheckList)
+        let param = {}
         this.specNameArr.forEach(item => {
           if (this.copyCheckList[item].length === 0) {
             delete this.copyCheckList[item]
           }
         })
         // 生成"下一步"中库存/销售价表格数据
-        let specValueArr = Object.values(this.copyCheckList)
-        // 总共会生成多少条数据
-        let stockLength = 1
-        for(let i = 0; i < specValueArr.length; i++) {
-          stockLength *= specValueArr[i].length
-        }
-        console.log(stockLength)
-        for(let i = 0; i < stockLength; i++) {
-          this.stockData.push({})
-        }
+        let specArr = Object.entries(this.copyCheckList)
+        console.log(specArr)
+        // for(let i = 0; i < 3; i++) {   /// 2 [Array(3), Array(2)]
+        //   for(let j = 0; j < 2; j++) {
+        //     param = {
+              
+        //     }
+        //   }
+        // }
+
+        /*
+        ---
+        */
+        // let a = [[1,2,3], ['a','b'], [7,9]]
+        // let result = [];
+        // a.forEach(value,index)
+
+
+          // let param = {
+          //   '颜色': '黑色',
+          //   '尺码': 'S',
+          //   id: i
+          // }
+          // this.stockData.push(param)
+        
       },
       change(val) {
         console.log(this.checkList)
@@ -263,6 +279,8 @@
       },
       handleClose() {
         this.$emit('on-dialog-close')
+        this.stockData = []
+        this.imageUrlArr = []
       },
       handleCloseAddSpec() {
         this.addSpecItemVisible = false
@@ -359,9 +377,15 @@
           }
         }
       },
+      // 上传图片
+      handleUpload(id) {
+        this.uploadId = id
+      },
       // 上传图片成功
       handleSuccess(val) {
-        this.imageUrl = val.data
+        this.imageUrlArr.splice(this.uploadId, 1)
+        this.imageUrlArr.splice(this.uploadId, 0, val.data)
+        console.log(this.imageUrlArr)
       }
     }
   }

@@ -28,9 +28,6 @@
       <el-form-item label="排序数值" prop="position">
         <el-input-number size="small" v-model="formValidate.position" style="width: 200px"></el-input-number>
       </el-form-item>
-      <el-form-item label="单笔订单运费" prop="deliverPrice">
-        <el-input v-model="formValidate.deliverPrice" placeholder="请输入"></el-input>&nbsp;元
-      </el-form-item>
       <el-form-item label="商品缩略图" prop="thumbnail">
         <upload
           @on-transport-file-list="handleTransportThumbnail"
@@ -118,8 +115,7 @@
           feedLevel: '',
           position: 0,
           thumbnail: '',
-          images: '',
-          deliverPrice: ''
+          images: ''
         }
       }
     },
@@ -137,11 +133,9 @@
           this.$refs[name].validate(valid => {
             if (!valid) return false
             let param = Object.assign({}, this.formValidate)
-            console.log(param)
             if (param.feedLevel === '-1') {
               delete param.feedLevel
             }
-            delete param.deliverPrice
             param.brand = {id: this.formValidate.brand}
             param.category = {id: this.formValidate.category}
             save({[this.model]: param}, res => {

@@ -21,8 +21,8 @@
             <el-dropdown-item
               icon="el-icon-circle-check"
               command="启用"
-              :disabled="selectList.findIndex(s=>{return s.status === '启用'}) >=0 || selectList.length === 0"
-              :style="(selectList.findIndex(s=>{return s.status === '启用'}) >=0 || selectList.length === 0)?{'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}"
+              :disabled="selectList.some(item => item.enabled)"
+              :style="selectList.some(item => item.enabled)?{'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}"
               @click="batchEnable"
             >
               启用
@@ -30,8 +30,8 @@
             <el-dropdown-item
               icon="el-icon-circle-close"
               command="禁用"
-              :disabled="selectList.findIndex(s=>{return s.status === '禁用'}) >=0 || selectList.length === 0"
-              :style="(selectList.findIndex(s=>{return s.status === '禁用'}) >=0 || selectList.length === 0)?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}"
+              :disabled="selectList.some(item => !item.enabled)"
+              :style="selectList.some(item => !item.enabled)?{'color':'rgba(255,255,255,0.4)'}:{'color':'#fff'}"
               @click.stop="batchDisable"
             >
               禁用
@@ -63,7 +63,7 @@
     <!--    表格-->
     <el-col :span="24">
       <el-table
-        :data="managerList"
+        :data="data"
         style="width: 95%;margin:0 auto;"
         @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55"></el-table-column>
@@ -73,11 +73,11 @@
               @click.native.prevent="toDetail(scope.row)"
               type="text"
               size="small">
-              {{scope.row.username}}
+              {{scope.row.name}}
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column prop="initial" label="首字母"></el-table-column>
+        <el-table-column prop="character" label="首字母"></el-table-column>
         <el-table-column label="状态">
           <template slot-scope="scope">
             {{scope.row.enabled ? '启用' : '禁用'}}
@@ -86,53 +86,52 @@
         <el-table-column fixed="right" align="center" label="操作" width="200">
           <template slot-scope="scope">
             <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small">{{scope.row.enabled ? '禁用' : '启用'}}</el-button>
+            <el-button @click.stop="handleDelete(scope.row)" type="text" size="small">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-col>
 
     <el-dialog
-      title="物流公司基本信息"
-      :visible.sync="detailProps.visible"
+      :title="type === '添加' ? '添加物流公司' : '物流公司信息'"
+      :visible.sync="addOrEditDialog"
       :modal-append-to-body='false'
       :append-to-body="true"
       width="40%"
       :before-close="handleClose">
-      <el-form status-icon label-width="150px">
-        <el-form-item label="物流公司"></el-form-item>
-        <el-form-item label="首字母"></el-form-item>
-        <el-form-item label="物流公司代码"></el-form-item>
-        <el-form-item label="公司网址"></el-form-item>
-        <el-form-item label="物流公司电话"></el-form-item>
+      <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
+        <el-form-item label="物流公司" prop="name">
+          <el-input v-model="formValidate.name" placeholder="输入物流公司名称"></el-input>
+        </el-form-item>
+        <el-form-item label="首字母" prop="character">
+          <el-select v-model="formValidate.character" placeholder="请选择首字母">
+            <el-option :label='String.fromCharCode(item + 64)' :value='String.fromCharCode(item + 64)' v-for='(item, index) in 26' :key='index'></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="公司网址" prop="url">
+          <el-input v-model="formValidate.url" placeholder="输入物流公司网址"></el-input>
+        </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
-        <el-button type="info" @click="handleClose">确 定</el-button>
+        <el-button @click="handleClose">取 消</el-button>
+        <el-button type='primary' @click="handleConfirm(type)">确 定</el-button>
       </div>
     </el-dialog>
   </el-row>
 </template>
 <script>
   import Search from "@/framework/components/search";
-  import {post} from "@/framework/http/request";
   import Emitter from '@/framework/mixins/emitter'
-  import {search, count} from '@/project/service/courier'
+  import {search, count, save, get, update,	deleteById} from '@/project/service/courier'
 
   export default {
     mixins: [Emitter],
     data() {
       return {
         model: "courier",
-        createProps: {
-          visible: false
-        },
-        editProps: {
-          visible: false
-        },
-        detailProps: {
-          visible: false
-        },
-        editId: 0,//编辑id
-        managerList: [],
+        addOrEditDialog: false,
+        editId: 0,
+        data: [],
         selectList: [],
         pageSize: 10,
         page: 1,
@@ -141,7 +140,7 @@
         searchItems: [
           {
             name: "物流公司",
-            key: "username",
+            key: "name",
             type: "string"
           },
           {
@@ -151,18 +150,78 @@
             displayValue: ["禁用", "启用"],
             value: ["禁用", "启用"]
           }
-        ]
-      };
-    },
-    computed: {
-      route() {
-        return this.$route;
+        ],
+        type: '添加',
+        formValidate: {
+          name: '',
+          character: '',
+          url: ''
+        },
+        ruleValidate: {
+          name: [{required: true, message: "请输入物流公司名称", trigger: "blur"}],
+          character: [{required: true, message: "请选择物流公司的首字母", trigger: "change"}]
+        },
       }
     },
     components: {
       Search
     },
     methods: {
+      handleConfirm(type) {
+        if (type === '添加') {
+          this.$refs.formValidate.validate(valid => {
+            if (!valid) return false
+            save({courier: this.formValidate}, res => {
+              this.$message.success('添加成功')
+              this.handleClose()
+              this.search(this.page)
+            })
+          })
+        } else {
+          this.$refs.formValidate.validate(valid => {
+            if (!valid) return false
+            let param = Object.assign({id: this.editId}, this.formValidate)
+            update({courier: param}, res => {
+              this.$message.success('更新修改成功')
+              this.handleClose()
+              this.search(this.page)
+            })
+          })
+        }
+      },
+      handleClose() {
+        this.addOrEditDialog = false
+        this.$refs.formValidate.resetFields()
+      },
+      handleDelete(row) {
+        this.$confirm(`确定删除该物流公司吗？`, '删除提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          deleteById({id: row.id}, res => {
+            this.$message.success('删除成功')
+            this.search(this.page)
+          })
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消删除'
+          })
+        })
+      },
+      toCreate() {
+        this.type = '添加'
+        this.addOrEditDialog = true
+      },
+      toDetail(row) {
+        this.type = '编辑'
+        this.editId = row.id
+        this.addOrEditDialog = true
+        get({id: this.editId}, res => {
+          this.formValidate = res
+        })
+      },
       handleEdit() {
         this.editId = this.selectList[0].id
         this.editProps.visible = true;
@@ -170,46 +229,35 @@
 
       // 控制启用禁用
       handleStatusChange(row) {
-        let status;
-        let _t = this;
-        if (row.status.indexOf('启用') >= 0) {
-          status = '禁用'
-        } else {
-          status = '启用'
-        }
+        let status = row.enabled ? '禁用' : '启用'
         this.$confirm(`确定${status}选中内容？`, '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
-          // 点击确定走这里
           if (status === '禁用') {
-            // 发送禁用请求，参数为该行数据的id
             disable({id: row.id}, res => {
-              _t.$message({
+              this.$message({
                 type: 'success',
-                message: '已禁用!'
+                message: '禁用成功!'
               });
-              // 重新渲染数据
-              _t.search(_t.page);
+              this.search(this.page);
             })
           } else {
-            // 发送启用用请求，参数为该行数据的id
             enable({id: row.id}, res => {
-              _t.$message({
+              this.$message({
                 type: 'success',
-                message: '已启用!'
+                message: '启用成功!'
               });
-              _t.search(_t.page);
+              this.search(this.page);
             })
           }
         }).catch(() => {
-          // 点击取消走这里
           this.$message({
             type: 'info',
-            message: '已取消删除'
-          });
-        });
+            message: '已取消操作'
+          })
+        })
       },
 
       // 顶部搜索栏目是否有输入条件，有则把条件值都传递给extraParams,用作参数发送search请求
@@ -223,13 +271,14 @@
           i++
         ) {
           keys.push(searchItemList[i].key);
-          // keys: [username,realname,roleId,status]
         }
         for (let i in keys) {
-          // keys: [username,realname,roleId,status]
           if (searchItems[keys[i]]) {
-            // 如果该单元表单中有输入查询条件,则加入到extraParams中作为请求参数
             this.extraParam[keys[i]] = searchItems[keys[i]];
+            // 处理状态参数
+            if (keys[i] === 'enabled') {
+              this.extraParam[keys[i]] = searchItems[keys[i]] === '启用'
+            }
           } else {
             delete this.extraParam[keys[i]];
           }
@@ -237,38 +286,27 @@
         this.search(1);
       },
 
-      // 显示添加框
-      toCreate() {
-        this.createProps.visible = true;
-      },
-
-      // 查询manager列表数据
       search(page) {
-        let _t = this;
-        _t.page = page;
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
+            size: this.pageSize
           },
-          [this.model]: _t.extraParam
+          [this.model]: this.extraParam
         };
         // 调用接口 查询数据
         search(param, res => {
-          _t.managerList = res;
-          _t.getTotal();
+          this.data = res;
+          this.getTotal();
         });
       },
 
       // 获取数据总条数
       getTotal() {
-        let _t = this;
-        let param = {[this.model]: _t.extraParam};
-        console.log(param)
+        let param = {[this.model]: this.extraParam};
         count(param, res => {
-          _t.total = parseInt(res);
-        });
+          this.total = parseInt(res);
+        })
       },
 
       handleTransportSelectList(list) {
@@ -277,7 +315,6 @@
 
       //批量启用
       batchEnable() {
-        let _t = this;
         let selectList = this.selectList;
         this.$confirm('确定启用所选的记录吗?', '启用提示', {
           confirmButtonText: '确定',
@@ -286,25 +323,23 @@
         }).then(() => {
           selectList.map(s => {
             enable({id: s.id}, res => {
-              _t.search(_t.page);
-              // this.$message({
-              //   type: 'success',
-              //   message: '删除成功!'
-              // });
+              this.search(this.page);
             })
           })
-
+          this.$message({
+            type: 'success',
+            message: '启用成功!'
+          })
         }).catch(() => {
           this.$message({
             type: 'info',
             message: '已取消'
-          });
-        });
+          })
+        })
       },
 
       //批量禁用
       batchDisable() {
-        let _t = this;
         let selectList = this.selectList;
         this.$confirm('确定启用所选的记录吗?', '启用提示', {
           confirmButtonText: '确定',
@@ -313,53 +348,24 @@
         }).then(() => {
           selectList.map(s => {
             disable({id: s.id}, res => {
-              _t.search(_t.page);
-              // this.$message({
-              //   type: 'success',
-              //   message: '删除成功!'
-              // });
+              this.search(this.page);
             })
           })
-
+          this.$message({
+            type: 'success',
+            message: '禁用成功!'
+          })
         }).catch(() => {
           this.$message({
             type: 'info',
             message: '已取消'
-          });
-        });
-      },
-
-      // 关闭添加 编辑弹框
-      handleClose() {
-        this.createProps.visible = false;
-        this.editProps.visible = false;
-        this.detailProps.visible = false;
-      },
-
-      // 处理 添加
-      handleSave() {
-        // 关闭
-        this.createProps.visible = false;
-        this.editProps.visible = false;
-        // 重新获取数据
-        this.search(this.page);
+          })
+        })
       },
 
       // 返回表格所选行
       handleSelectionChange(val) {
         this.selectList = val;
-        console.log(this.selectList)
-      },
-
-      // 监听双击当前行
-      handleRowClick(row) {
-        this.editId = row.id;
-        this.editProps.visible = true;
-      },
-
-      // 跳转到详情
-      toDetail(row) {
-        this.detailProps.visible = true
       },
 
       // 监听当前页码的变化
@@ -371,17 +377,7 @@
       // 监听每页显示条目数的变化
       handleSizeChange(pageSize) {
         this.pageSize = pageSize;
-
         this.search(this.page);
-      },
-
-      // 更多操作的下拉是否显示
-      onMenuChange(val) {
-        if (val) {
-          this.$refs.rotate.style.transform = 'rotate(180deg)'
-        } else {
-          this.$refs.rotate.style.transform = 'rotate(0deg)'
-        }
       },
 
       // 监听更多操作点击选择对应的操作

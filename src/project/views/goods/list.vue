@@ -20,6 +20,14 @@
           <el-dropdown-menu slot="dropdown">
             <el-dropdown-item
               icon="el-icon-circle-check"
+              command="编辑"
+              :disabled="selectList.length !== 1"
+              :style="selectList.length !== 1 ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}"
+            >
+              编辑
+            </el-dropdown-item>
+            <el-dropdown-item
+              icon="el-icon-circle-check"
               command="上架"
               :disabled="selectList.some(item => item.sellable)"
               :style="selectList.some(item => item.sellable) ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}"
@@ -96,11 +104,11 @@
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column prop="category" label="商品分类"></el-table-column>
-        <el-table-column prop="brand" label="商品品牌"></el-table-column>
+        <el-table-column prop="category.name" label="商品分类"></el-table-column>
+        <el-table-column prop="brand.name" label="商品品牌"></el-table-column>
         <el-table-column prop="position" label="排序数值"  width="120" sortable></el-table-column>
-        <el-table-column prop="sales" label="销量" width="120" sortable></el-table-column>
-        <el-table-column prop="updateTime"  label="创建时间" width="160" sortable></el-table-column>
+        <el-table-column prop="salesQuantity" label="销量" width="120" sortable></el-table-column>
+        <el-table-column prop="updateTime"  label="更新时间" width="160" sortable></el-table-column>
         <el-table-column label="推荐状态">
           <template slot-scope="scope">
             {{scope.row.featured ? '是' : '否'}}
@@ -119,7 +127,6 @@
         <el-table-column width='120' label="操作" fixed="right">
           <template slot-scope="scope">
             <el-button @click.stop="handleSellable(scope.row)" type="text" size="small">{{scope.row.sellable ? '下架' : '上架'}}</el-button>
-            <el-button @click.stop="handleEdit(scope.row)" type="text" size="small">编辑</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -133,13 +140,22 @@
       @on-dialog-close="handleClose"
       @onRefreshData='search(page)'
     />
+    <!--    编辑-->
+    <i-edit
+      :dialog-visible="editProps.visible"
+      :brand-options="brandOptions"
+      :category-options="categoryOptions"
+      :stage-options="stageOptions"
+      :edit-id='editId'
+      @on-dialog-close="handleClose"
+      @onRefreshData='search(page)'
+    />
   </el-row>
 </template>
 <script>
   import Search from "@/framework/components/search";
   import ICreate from "./create"
-  // import IEdit from "./edit"
-  import {post} from "@/framework/http/request";
+  import IEdit from "./edit"
   import Emitter from '@/framework/mixins/emitter'
   import {search, count, enableSellable, disableSellable, enableSalable, disableSalable, enableFeatured, disableFeatured} from '@/project/service/product'
   import { searchBrand } from '@/project/service/brand'
@@ -192,16 +208,19 @@
         ],
         brandOptions: [],
         categoryOptions: [],
-        stageOptions: []
+        stageOptions: [],
+        // 品牌搜索参数
+        brandParam: {},
+        // 分类搜索参数
+        categoryParam: {},
+        // 更新时间搜索参数
+        updateTimeParam: {}
       }
     },
     components: {
-      Search, ICreate
+      Search, ICreate, IEdit
     },
     methods: {
-      handleEdit(row) {
-        this.$router.push(`/${this.model}/show/` + row.id)
-      },
       // 控制上下架
       handleSellable(row) {
         let status = row.sellable ? '下架' : '上架'
@@ -231,8 +250,8 @@
           this.$message({
             type: 'info',
             message: '已取消删除'
-          });
-        });
+          })
+        })
       },
 
       searchBySearchItem(searchItems) {
@@ -249,11 +268,39 @@
         for (let i in keys) {
           if (searchItems[keys[i]]) {
             this.extraParam[keys[i]] = searchItems[keys[i]];
+            if (keys[i] === 'brand') delete this.extraParam[keys[i]]
+            if (keys[i] === 'category') delete this.extraParam[keys[i]]
+            if (keys[i] === 'updateTime') delete this.extraParam[keys[i]]
           } else {
             delete this.extraParam[keys[i]];
           }
         }
-        this.search(1);
+        // 处理品牌搜索参数
+        if (searchItems.brand) {
+          this.brandParam = {
+            name: searchItems.brand
+          }
+        } else {
+          delete this.brandParam
+        }
+        // 处理分类搜索参数
+        if (searchItems.category) {
+          this.categoryParam = {
+            name: searchItems.category
+          }
+        } else {
+          delete this.categoryParam
+        }
+        // 处理更新时间搜索参数
+        if (searchItems.updateTime) {
+          this.updateTimeParam = {
+            start: searchItems.updateTime[0],
+            end: searchItems.updateTime[1]
+          }
+        } else {
+          delete this.updateTimeParam
+        }
+        this.search(1)
       },
 
       toCreate() {
@@ -265,10 +312,18 @@
         let param = {
           pageable: {
             page: page,
-            size: this.pageSize
+            size: this.pageSize,
+            desc: 'id'
           },
-          product: this.extraParam
+          product: this.extraParam,
+          brand: this.brandParam,
+          category: this.categoryParam,
+          updateTime: this.updateTimeParam,
         };
+        // 如果参数不需要则清除
+        if (JSON.stringify(param.brand) === "{}") delete param.brand
+        if (JSON.stringify(param.category) === "{}") delete param.category
+        if (JSON.stringify(param.updateTime) === "{}") delete param.updateTime
         search(param, res => {
           this.data = res;
           this.getTotal();
@@ -276,7 +331,16 @@
       },
 
       getTotal() {
-        let param = {product: this.extraParam};
+        let param = {
+          product: this.extraParam,
+          brand: this.brandParam,
+          category: this.categoryParam,
+          updateTime: this.updateTimeParam
+        }
+        // 如果参数不需要则清除
+        if (JSON.stringify(param.brand) === "{}") delete param.brand
+        if (JSON.stringify(param.category) === "{}") delete param.category
+        if (JSON.stringify(param.updateTime) === "{}") delete param.updateTime
         count(param, res => {
           this.total = parseInt(res);
         });
@@ -343,9 +407,10 @@
           type: 'warning'
         }).then(() => {
           selectList.map(s => {
-            enableFeatured({id: s.id}, res => {})
+            enableFeatured({id: s.id}, res => {
+              this.search(this.page)
+            })  
           })
-          this.search(this.page)
           this.$message({
             type: 'success',
             message: '设置成功!'
@@ -367,9 +432,10 @@
           type: 'warning'
         }).then(() => {
           selectList.map(s => {
-            disableFeatured({id: s.id}, res => {})
+            disableFeatured({id: s.id}, res => {
+              this.search(this.page)
+            })
           })
-          this.search(this.page)
           this.$message({
             type: 'success',
             message: '取消成功!'
@@ -457,12 +523,11 @@
         this.pageSize = pageSize;
         this.search(this.page);
       },
-
       handleClick(command) {
         switch (command) {
           case '编辑':
-            this.editId = this.selectList[0].id;
-            this.editProps.visible = true;
+            this.editId = this.selectList[0].id
+            this.editProps.visible = true
             break;
           case '上架':
             this.batchEnableSellable()

@@ -64,8 +64,7 @@
       <el-table
         :data="data"
         style="width: 95%;margin:0 auto;"
-        @selection-change="handleSelectionChange"
-      >
+        @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55"></el-table-column>
         <el-table-column label="品牌名称">
           <template slot-scope="scope">
@@ -80,7 +79,8 @@
         <el-table-column label="品牌logo">
           <template slot-scope="scope">
             <el-avatar shape="square"
-                       :fit="'fill'"
+                       :fit="'contain'"
+                       :size="80"
                        :src="`${$store.state.prefix}${scope.row.image}`"
                        v-if="scope.row.image">
             </el-avatar>

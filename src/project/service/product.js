@@ -11,7 +11,8 @@ let searchUrl = `api/${model}/search`;
 let countUrl = `api/${model}/count`;
 let saveUrl = `api/${model}/save`;
 let getUrl = `api/${model}/get`;
-
+let updateUrl = `api/${model}/update`;
+let findByIdUrl = `api/${model}/findById`;
 
 // 上架商品
 export function enableSellable(param, callback) {
@@ -102,6 +103,24 @@ export function save(param, callback) {
 
 export function get(param, callback) {
   axios.post(getUrl, param).then(data => {
+    if (data !== undefined && data !== '' && data !== null) {
+      // callback when data is exist
+      callback(data)
+    }
+  })
+}
+
+export function update(param, callback) {
+  axios.post(updateUrl, param).then(data => {
+    if (data !== undefined && data !== '' && data !== null) {
+      // callback when data is exist
+      callback(data)
+    }
+  })
+}
+
+export function findById(param, callback) {
+  axios.post(findByIdUrl, param).then(data => {
     if (data !== undefined && data !== '' && data !== null) {
       // callback when data is exist
       callback(data)

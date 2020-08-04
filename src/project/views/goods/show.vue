@@ -11,39 +11,66 @@
               <img src="../../assets/more.png" alt="" width="14" height="12">
             </el-button>
             <el-dropdown-menu slot="dropdown">
-              <el-dropdown-item command="信息编辑">编辑</el-dropdown-item>
-              <el-dropdown-item command="上架">上架</el-dropdown-item>
-              <el-dropdown-item command="下架">下架</el-dropdown-item>
-              <el-dropdown-item command="设置推荐">设置推荐</el-dropdown-item>
-              <el-dropdown-item command="取消推荐">取消推荐</el-dropdown-item>
-              <el-dropdown-item command="设置热门">设置热门</el-dropdown-item>
-              <el-dropdown-item command="取消热门">取消热门</el-dropdown-item>
+              <!-- <el-dropdown-item command="信息编辑">编辑</el-dropdown-item> -->
+              <el-dropdown-item 
+                command="上架"
+                :disabled="product.sellable"
+                :style="product.sellable ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
+                上架
+              </el-dropdown-item>
+              <el-dropdown-item 
+                command="下架"
+                :disabled="!product.sellable"
+                :style="!product.sellable ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
+                下架
+              </el-dropdown-item>
+              <el-dropdown-item 
+                command="设置推荐"
+                :disabled="product.featured"
+                :style="product.featured ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
+                设置推荐
+              </el-dropdown-item>
+              <el-dropdown-item 
+                command="取消推荐"
+                :disabled="!product.featured"
+                :style="!product.featured ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
+                取消推荐
+              </el-dropdown-item>
+              <el-dropdown-item 
+                command="设置热门"
+                :disabled="product.salable"
+                :style="product.salable ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
+                设置热门
+              </el-dropdown-item>
+              <el-dropdown-item 
+                command="取消热门"
+                :disabled="!product.salable"
+                :style="!product.salable ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
+                取消热门
+              </el-dropdown-item>
             </el-dropdown-menu>
           </el-dropdown>
         </div>
         <div class="text-item">
-          <span class="text_label">售卖状态：---</span>
+          <span class="text_label">售卖状态：{{product.sellable ? '上架中' : '下架中'}}</span>
         </div>
         <div class="text-item">
           <span class="text_label">商品名称：{{product.name}}</span>
         </div>
         <div class="text-item">
-          <span class="text_label">商品分类：---</span>
+          <span class="text_label" v-if='product.category'>商品分类：{{product.category.name}}</span>
         </div>
         <div class="text-item">
           <span class="text_label">喂养阶段：---</span>
         </div>
         <div class="text-item">
-          <span class="text_label">单笔订单运费：---</span>
-        </div>
-        <div class="text-item">
           <span class="text_label">排序数值：---</span>
         </div>
         <div class="text-item">
-          <span class="text_label">总销量：---</span>
+          <span class="text_label">总销量：{{product.salesQuantity ? product.salesQuantity : '---'}}</span>
         </div>
         <div class="text-item">
-          <span class="text_label">总库存：---</span>
+          <span class="text_label">总库存：{{product.stocks ? product.stocks : '---'}}</span>
         </div>
         <div class="text-item swipeImg-wrapper">
           <span class="text_label swipeImg-wrapper-text">商品缩略图：</span>
@@ -58,10 +85,10 @@
           </div>
         </div>
         <div class="text-item">
-          <span class="text_label">热门状态：---</span>
+          <span class="text_label">热门状态：{{product.salable ? '是' : '否'}}</span>
         </div>
         <div class="text-item">
-          <span class="text_label">推荐状态：---</span>
+          <span class="text_label">推荐状态：{{product.featured ? '是' : '否'}}</span>
         </div>
       </el-card>
     </el-col>
@@ -104,8 +131,7 @@
         </div>
         <el-table
           :data="stockData">
-          <el-table-column prop="color" label="颜色"></el-table-column>
-          <el-table-column prop="value" label="尺码"></el-table-column>
+          <el-table-column :prop='item.name' :label="item.name" v-for='(item, index) in specData' :key='index'></el-table-column>
           <el-table-column prop="sellPrice" label="销售价(元)"></el-table-column>
           <el-table-column prop="origPrice" label="原价(元)"></el-table-column>
           <el-table-column prop="stock" label="库存"></el-table-column>
@@ -114,7 +140,7 @@
       </el-card>
     </el-col>
     <!--商品批次-->
-    <el-col :span="18" class='user-detail-right'>
+    <el-col :span="18" class='user-detail-right' style='float: right;'>
       <el-card>
         <div slot="header" class='box-card-header'>
           <span class='box-card-header-left'>商品批次</span>
@@ -162,7 +188,7 @@
             <el-table-column prop="status" label="状态"></el-table-column>
             <el-table-column width='180' label="操作">
               <template slot-scope="scope">
-                <el-button type="text" size="small">{{scope.row.status.indexOf('启用') >= 0 ? '禁用' : '启用'}}</el-button>
+                <el-button type="text" size="small">{{scope.row.enabled ? '禁用' : '启用'}}</el-button>
                 <el-button  type="text" size="small">删除</el-button>
               </template>
             </el-table-column>
@@ -196,10 +222,15 @@
       </el-card>
     </el-col>
     <!--    基本信息编辑弹框-->
-    <i-edit
+    <!-- <i-edit
       :dialog-visible="editProps.visible"
+      :brand-options="brandOptions"
+      :category-options="categoryOptions"
+      :stage-options="stageOptions"
+      :edit-id='editId'
       @on-dialog-close="handleClose"
-    />
+      @onRefreshData='search(page)'
+    /> -->
     <!--商品批次详情弹框-->
     <el-dialog
       title="商品批次详情"
@@ -296,7 +327,7 @@
 </template>
 
 <script>
-  import { get } from '@/project/service/product'
+  import { findById, enableSellable, disableSellable, enableFeatured, disableFeatured, enableSalable, disableSalable } from '@/project/service/product'
   import { searchAttribute, save, deleteById, update } from '@/project/service/attribute'
   import { saveValue, deleteValueById } from '@/project/service/value'
   import textEdit from './textEdit'
@@ -386,9 +417,36 @@
     },
     created() {
       // 获取商品详细信息
-      this.get()
+      this.findById()
       // 获取商品规格
       this.getSpec()
+      // let copyArr = []
+      // for (let i = 0; i < this.specData.length; i++) {
+      //   console.log(this.specData[i])
+      // }
+      // console.log(valueArr)
+      
+      // let resultList = []                         //结果数组      [[],[],[],[列1的值，列2的值]]
+      // let child = []                              //放进结果的数组元素
+      // let len = this.specData.length;
+
+      // function brotherback(list, level) {
+      //   list.forEach(value => {
+      //     if(level = len) {     //如果爸数组的循环到了最后一层
+      //       child[level] = value
+      //       resultList.push(child)
+      //       child = []
+      //     } else {
+      //       child[level] = value
+      //       return brotherback(this.specData[i++] ,i++)
+      //     }
+      //   })
+      // }
+      // console.log(this.specData[0])
+      // // brotherback(this.specData[0], 0)
+      // console.log('child',child)
+      // console.log('result是什么',resultList)
+
     },
     methods: {
       // 确认添加或编辑规格
@@ -559,8 +617,8 @@
         })
       },
       // 根据商品id获取商品详细信息
-      get() {
-        get({id: this.id}, res => {
+      findById() {
+        findById({id: this.id}, res => {
           this.product = res
         })
       },
@@ -578,6 +636,60 @@
           case '添加批次':
             this.createBatchProps.visible = true
             break;
+          case '上架':
+            enableSellable({id: this.id}, res => {
+              this.$message({
+                type: 'success',
+                message: '上架成功!'
+              });
+              this.findById();
+            })
+            break;
+          case '下架':
+            disableSellable({id: this.id}, res => {
+              this.$message({
+                type: 'success',
+                message: '下架成功!'
+              });
+              this.findById();
+            })
+            break;
+          case '设置推荐':
+            enableFeatured({id: this.id}, res => {
+              this.$message({
+                type: 'success',
+                message: '设置推荐成功!'
+              });
+              this.findById();
+            })
+            break;
+          case '取消推荐':
+            disableFeatured({id: this.id}, res => {
+              this.$message({
+                type: 'success',
+                message: '取消推荐成功!'
+              });
+              this.findById();
+            })
+            break
+          case '设置热门':
+            enableSalable({id: this.id}, res => {
+              this.$message({
+                type: 'success',
+                message: '设置热门成功!'
+              });
+              this.findById();
+            })
+            break;
+          case '取消热门':
+            disableSalable({id: this.id}, res => {
+              this.$message({
+                type: 'success',
+                message: '取消热门成功!'
+              });
+              this.findById();
+            })
+            break
         }
       },
       searchBySearchItem(searchItems) {
