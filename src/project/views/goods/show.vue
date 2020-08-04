@@ -335,6 +335,7 @@
   import ICreateSpec from './createSpec' // 添加商品规格弹框组件
   import ICreateBatch from './createBatch' // 添加商品批次弹框组件
   import search from '@/framework/components/search'
+  import { reduceTwoArr, reduceMutipleArr } from '@/framework/utils/util'
   export default {
     components: {
       IEdit, ICreateSpec, ICreateBatch, textEdit, search
@@ -384,6 +385,8 @@
         attributeId: null,
         // 所有规格条目数据
         attributeData: [],
+        // 各个条目规格值的合并数组[[Array1],[Array2],[Array3]]
+        valueListArr: [],
         // 分页组件参数
         pageSize: 10,
         page: 1,
@@ -420,33 +423,6 @@
       this.findById()
       // 获取商品规格
       this.getSpec()
-      // let copyArr = []
-      // for (let i = 0; i < this.specData.length; i++) {
-      //   console.log(this.specData[i])
-      // }
-      // console.log(valueArr)
-      
-      // let resultList = []                         //结果数组      [[],[],[],[列1的值，列2的值]]
-      // let child = []                              //放进结果的数组元素
-      // let len = this.specData.length;
-
-      // function brotherback(list, level) {
-      //   list.forEach(value => {
-      //     if(level = len) {     //如果爸数组的循环到了最后一层
-      //       child[level] = value
-      //       resultList.push(child)
-      //       child = []
-      //     } else {
-      //       child[level] = value
-      //       return brotherback(this.specData[i++] ,i++)
-      //     }
-      //   })
-      // }
-      // console.log(this.specData[0])
-      // // brotherback(this.specData[0], 0)
-      // console.log('child',child)
-      // console.log('result是什么',resultList)
-
     },
     methods: {
       // 确认添加或编辑规格
@@ -472,11 +448,15 @@
                 },
                 valueList
               }
-              // 发送添加规格属性请求
+              // 发送添加规格请求
               save({attribute: addParam}, res => {
                 this.$message.success('添加规格成功')
                 this.addSpecItemVisible = false
                 this.specData.push({name: this.specFormValidate.name, value: [...this.dynamicTags]})
+                // 动态生成库存列表数据
+                this.valueListArr.push([...this.dynamicTags])
+                this.generateStockData(this.valueListArr)
+                // 清空重置数据
                 this.dynamicTags = []
                 this.specFormValidate.name = ''
               })
@@ -589,6 +569,7 @@
         this.imgVisible = true
         this.showImgSrc = src
       },
+      // 获取规格数据
       getSpec() {
         searchAttribute({product: {id: this.id}}, res => {
           this.attributeData = res
@@ -601,9 +582,38 @@
               value.push(item1.text)
             })
             param.value = value
+            // this.valueListArr.push(value)
             this.specData.push(param)
           })
+          // 获取库存列表数据
+          // 伪数组转化为数组
+          // let arr = Array.prototype.slice.call(this.valueListArr)
+          // let result = reduceMutipleArr(arr)
+          // console.log(result)
+          // for(let i = 0, len = result.length; i < len; i++) {
+          //   let param = {}
+          //   for(let j = 0, len = this.specData.length; j < len; j++) {
+          //     param[this.specData[j].name] = result[i].split('-')[j]
+          //   }
+          //   this.stockData.push(param)
+          // }
+          // console.log(this.stockData)
         })
+      },
+      // 动态生成库存列表数据
+      generateStockData(valueListArr) {
+        // 伪数组转化为数组
+        let arr = Array.prototype.slice.call(this.valueListArr)
+        // 组合动态生成表格数据
+        let result = reduceMutipleArr(arr)
+        console.log(result)
+        for(let i = 0, len = result.length; i < len; i++) {
+          let param = {}
+          for(let j = 0, len = this.specData.length; j < len; j++) {
+            param[this.specData[j].name] = result[i].split('-')[j]
+          }
+          this.stockData.push(param)
+        }
       },
       // 显示勾选的规格值
       handleShowSpec(checkList) {

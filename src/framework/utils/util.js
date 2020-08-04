@@ -1402,3 +1402,28 @@ export function formatNumber(n) {
   var r = len % 3;
   return r > 0 ? b.slice(0, r) + "," + b.slice(r, len).match(/\d{3}/g).join(",") : b.slice(r, len).match(/\d{3}/g).join(",");
 }
+
+/**
+ * 两个数组的值共有多少种组合方式
+ * @param {Array} source1 数组1
+ * @param {Array} source2 数组2
+ */
+export function reduceTwoArr(source1, source2) {
+  let result = []
+  source1.forEach(item => {
+    source2.forEach(item2 => {
+      result.push(`${item}-${item2}`)
+    })
+  })
+  return result
+}
+
+/**
+ * 多个数组的值共有多少种组合方式
+ * @param {Array} arr 数组[[],[],[]]
+ */
+export function reduceMutipleArr(arr = []) {
+  return arr.reduce(function(acc, currentItem){
+    return reduceTwoArr(acc, currentItem)
+  })
+}
