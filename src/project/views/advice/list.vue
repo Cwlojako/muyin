@@ -11,7 +11,7 @@
     <!--    按钮和分页-->
     <el-col :span="24">
       <div style="width: 95%;margin: 10px auto;">
-        <el-button type="primary" @click="batchDeal" :disabled="selectList.findIndex(s=>{return s.status === '已处理'}) >=0 || selectList.length === 0">标记已处理</el-button>
+        <el-button type="primary" @click="batchDeal" :disabled="selectList.some(item => item.status === '已处理')">标记已处理</el-button>
         <el-button icon="el-icon-delete" @click="batchDelete">删除</el-button>
         <div class="pager-group">
           <el-pagination
@@ -33,26 +33,28 @@
         style="width: 95%;margin:0 auto;"
         @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55"></el-table-column>
-        <el-table-column label="手机号">
+        <el-table-column label="序号">
           <template slot-scope="scope">
             <el-button
               @click.native.prevent="toDetail(scope.row)"
               type="text"
               size="small">
-              {{scope.row.advisorPhone}}
+              {{scope.row.id}}
             </el-button>
           </template>
         </el-table-column>
-        <el-table-column prop="advisorNickname" label="昵称"></el-table-column>
-        <el-table-column prop="createAt" label="反馈时间" sortable></el-table-column>
+        <el-table-column label="手机号" prop='provider.phone'></el-table-column>
+        <el-table-column prop="provider.nickname" label="昵称"></el-table-column>
+        <el-table-column prop="createTime" label="反馈时间" sortable></el-table-column>
         <el-table-column prop="content" label="反馈内容"></el-table-column>
         <el-table-column prop="status" label="状态"></el-table-column>
-        <el-table-column prop="manager" label="处理人账号"></el-table-column>
-        <el-table-column prop="updateAt" label="处理时间"></el-table-column>
+        <el-table-column prop="handler.username" label="处理人账号"></el-table-column>
+        <el-table-column prop="closeTime" label="处理时间"></el-table-column>
         <el-table-column fixed="right" align="center" label="操作" width="200">
           <template slot-scope="scope">
             <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small" v-if="scope.row.status === '待处理'">标记已处理</el-button>
-            <el-button @click.stop="handleStatusChange(scope.row)" type="text" size="small" v-else disabled>已处理</el-button>
+            <el-button type="text" size="small" v-else disabled>已处理</el-button>
+            <el-button @click.stop="handleDelete(scope.row)" type="text" size="small">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -61,23 +63,23 @@
 </template>
 <script>
   import Search from "@/framework/components/search";
-  import {post} from "@/framework/http/request";
   import Emitter from '@/framework/mixins/emitter'
-  import {search, count, del, batchDelete ,enable, close, batchClose} from '@/project/service/advice'
+  import {search, count, close, batchClose, deleteById} from '@/project/service/feedback'
 
   export default {
     mixins: [Emitter],
     data() {
       return {
-        model: "advice",
-        editId: 0,//编辑id
+        model: "feedback",
+        editId: 0,
         data: [],
         selectList: [],
-        sort: {asc: [], desc: []},
         pageSize: 10,
         page: 1,
         total: 0,
         extraParam: {},
+        createTimeParam: {},
+        accountParam: {},
         searchItems: [
           {
             name: "手机号",
@@ -86,7 +88,7 @@
           },
           {
             name: "反馈时间",
-            key: "createAt",
+            key: "createTime",
             type: "datetimerange"
           }
         ]
@@ -107,89 +109,122 @@
         }
         for (let i in keys) {
           if (searchItems[keys[i]]) {
-            this.extraParam[keys[i]] = searchItems[keys[i]];
+            this.extraParam[keys[i]] = searchItems[keys[i]]
+            if (keys[i] === 'createTime') delete this.extraParam[keys[i]]
+            if (keys[i] === 'phone') delete this.extraParam[keys[i]]
           } else {
             delete this.extraParam[keys[i]];
           }
         }
-        //有时间段搜索进行转化字段
-        if (this.extraParam.createAt) {
-          this.extraParam.startCreateAt = this.extraParam.createAt[0];
-          this.extraParam.endCreateAt = this.extraParam.createAt[1];
-          delete this.extraParam.createAt;
+        // 处理更新时间搜索参数
+        if (searchItems.createTime) {
+          this.createTimeParam = {
+            start: searchItems.createTime[0],
+            end: searchItems.createTime[1]
+          }
         } else {
-          delete this.extraParam.startCreateAt;
-          delete this.extraParam.endCreateAt;
+          delete this.createTimeParam
+        }
+        // 处理手机号搜索参数
+        if (searchItems.phone) {
+          this.accountParam = {
+            phone: searchItems.phone
+          }
+        } else {
+          delete this.accountParam
         }
         this.search(1);
       },
       search(page) {
-        let _t = this;
-        _t.page = page;
+        this.page = page;
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
+            size: this.pageSize
           },
-          [this.model]: _t.extraParam
-        };
-        if (
-          param.pageable.sort.asc.length === 0 &&
-          param.pageable.sort.desc.length === 0
-        ) {
-          delete param.pageable.sort;
+          [this.model]: this.extraParam,
+          createTime: this.createTimeParam,
+          account: this.accountParam
         }
+        // 如果参数不需要则清除
+        if (JSON.stringify(param.createTime) === "{}") delete param.createTime
+        if (JSON.stringify(param.account) === "{}") delete param.account
         search(param, res => {
-          let data = res;
-          _t.data = data;
-          _t.getTotal();
+          this.data = res
+          this.getTotal()
         });
       },
       getTotal() {
-        let _t = this;
-        let param = {[this.model]: _t.extraParam};
+        let param = {
+          [this.model]: this.extraParam,
+          createTime: this.createTimeParam,
+          account: this.accountParam
+        }
+        // 如果参数不需要则清除
+        if (JSON.stringify(param.createTime) === "{}") delete param.createTime
+        if (JSON.stringify(param.account) === "{}") delete param.account
         count(param, res => {
-          _t.total = parseInt(res);
+          this.total = parseInt(res);
         });
       },
       handleTransportSelectList(list) {
         this.selectList = list;
       },
+      // 单条删除
+      handleDelete(row) {
+        this.$confirm('确定删除该条记录吗?', '删除提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          deleteById({id: row.id},res => {
+            this.$message.success('删除成功')
+            this.search(this.page)
+          })
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消删除'
+          })
+        })
+      },
       //批量删除
       batchDelete() {
-        this.broadcast("SiTable", "on-get-selectList");
-        this.$nextTick(() => {
-          let selectList = this.selectList;
-          if (selectList.length === 0) {
-            this.$notify.warning({
-              title: "至少选择一条数据"
-            });
-            return;
-          }
-          this.$confirm('确定删除所选记录吗?', '删除提示', {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }).then(() => {
-            let idList = selectList.map(s => {
-              return s.id;
-            });
-            batchDelete({idList:idList},res => {
-              this.$message.success('删除成功');
-              this.search(this.page);
-            })
-          }).catch(() => {
-            this.$message({
-              type: 'info',
-              message: '已取消删除'
-            });
+        let selectList = this.selectList;
+        if (selectList.length === 0) {
+          this.$message.warning({
+            title: "至少选择一条数据"
+          })
+          return
+        }
+        this.$confirm('确定删除所选记录吗?', '删除提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          let idList = selectList.map(s => {
+            return s.id;
           });
-        });
+          batchDelete({idList: idList},res => {
+            this.$message.success('删除成功')
+            this.search(this.page)
+          })
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消删除'
+          })
+        })
+      },
+      // 单条处理
+      handleStatusChange(row) {
+        close({id: row.id},res => {
+          this.$message.success('已处理');
+          this.search(this.page);
+        })
       },
       //批量处理
       batchDeal() {
-        let _t = this;
         let selectList = this.selectList;
         this.$confirm('确定处理所选的记录吗?', '启用提示', {
           confirmButtonText: '确定',
@@ -199,9 +234,9 @@
           let idList = selectList.map(s => {
             return s.id
           });
-          batchClose({idList:idList},res => {
-            _t.$message.success('已处理');
-            _t.search(this.page);
+          batchClose({idList: idList},res => {
+            this.$message.success('已处理');
+            this.search(this.page);
           })
         }).catch(() => {
           this.$message({
@@ -210,12 +245,7 @@
           });
         });
       },
-      delete(id) {
-        let _t = this;
-        del({id: id}, res => {
-          _t.search(_t.page);
-        });
-      },
+
       handleSelectionChange(val) {
         this.selectList = val;
       },
@@ -229,12 +259,6 @@
       handleSizeChange(pageSize) {
         this.pageSize = pageSize;
         this.search(this.page);
-      },
-      handleStatusChange(row) {
-        close({id:row.id},res => {
-          this.$message.success('已处理');
-          this.search(this.page);
-        })
       }
     },
     mounted() {

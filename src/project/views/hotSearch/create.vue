@@ -6,11 +6,11 @@
     width="40%"
     :before-close="handleClose">
     <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
-      <el-form-item label="关键词" prop="keyword">
-        <el-input v-model="formValidate.keyword" placeholder="请输入关键词"></el-input>
+      <el-form-item label="关键词" prop="name">
+        <el-input v-model="formValidate.name" placeholder="请输入关键词"></el-input>
       </el-form-item>
-      <el-form-item label="排序数值" prop="sort">
-        <el-input-number v-model="formValidate.sort" placeholder="请输入排序数值"></el-input-number>
+      <el-form-item label="排序数值" prop="position">
+        <el-input-number v-model="formValidate.position" placeholder="请输入排序数值"></el-input-number>
       </el-form-item>
     </el-form>
     <div slot="footer" class="dialog-footer">
@@ -21,16 +21,11 @@
 </template>
 
 <script>
-  import Upload from "@/framework/components/upload";
   import emitter from '@/framework/mixins/emitter'
-  import {save} from '@/project/service/manager'
+  import {save} from '@/project/service/hotword'
 
   export default {
-    name: "hotSearchAdd",
     mixins: [emitter],
-    components: {
-      Upload
-    },
     props: {
       dialogVisible: {
         type: Boolean,
@@ -41,42 +36,33 @@
       return {
         // 添加表单校验规则
         ruleValidate: {
-          phone: [
-            {required: true, message: "手机号不能为空", trigger: "blur"}
-          ],
-          nickname: [
-            {required: true, message: "昵称不能为空", trigger: "blur"}
-          ]
+          name: [{required: true, message: "关键词不能为空", trigger: "blur"}],
+          position: [{required: true, message: "排序数值不能为空", trigger: "change"}]
         },
-        model:'manager',
+        model:'hotword',
         formValidate: {
-          status: '启用',
-          keyword: '',
-          sort: ''
+          name: '',
+          position: 0
         }
       }
     },
     methods: {
-      changeType() {},
       handleClose() {
         this.$refs.formValidate.resetFields();
         this.$emit('on-dialog-close');
       },
 
       handleConfirm(name) {
-        this.$nextTick(() => {
-          this.$refs[name].validate(valid => {
-            if (valid) {
-              save(
-                {[this.model]:this.formValidate},
-                res => {
-                  this.$message.success('添加成功');
-                  this.$refs.formValidate.resetFields();
-                  this.$emit('on-save-success');
-                })
-            }
-          })
-        });
+        this.$refs[name].validate(valid => {
+          if (!valid) return false
+          save(
+            {[this.model]: this.formValidate},
+            res => {
+              this.$message.success('添加成功')
+              this.handleClose()
+              this.$emit('onRefreshData')
+            })
+        })
       }
     }
   }

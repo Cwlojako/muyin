@@ -33,11 +33,11 @@ export default {
 
         // 控制“更多操作”中箭头的旋转
         onMenuChange(val) {
-        if (val) {
-          this.$refs.rotate.style.transform = 'rotate(180deg)'
-        } else {
-          this.$refs.rotate.style.transform = 'rotate(0deg)'
-        }
+            if (val) {
+                this.$refs.rotate.style.transform = 'rotate(180deg)'
+            } else {
+                this.$refs.rotate.style.transform = 'rotate(0deg)'
+            }
       },
     }
 };

@@ -4,6 +4,7 @@ const model = 'post';
 let searchUrl = `api/${model}/search`;
 let countUrl = `api/${model}/count`;
 let getUrl = `api/${model}/get`;
+let getPostUrl = `api/${model}/get`;
 let updateEnableUrl = `api/${model}/updateEnable`;
 let batchUpdateEnableUrl = `api/${model}/batchUpdateEnable`;
 let saveUrl = `api/${model}/save`;
@@ -29,6 +30,16 @@ export function count(param, callback) {
 // 根据id获取论坛文章信息
 export function get(param, callback) {
   axios.post(getUrl, param).then(data => {
+    if (data !== undefined && data !== '' && data !== null) {
+      // callback when data is exist
+      callback(data)
+    }
+  })
+}
+
+// 根据id获取论坛文章信息
+export function getPost(param, callback) {
+  axios.post(getPostUrl, param).then(data => {
     if (data !== undefined && data !== '' && data !== null) {
       // callback when data is exist
       callback(data)

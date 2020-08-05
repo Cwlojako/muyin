@@ -26,25 +26,24 @@
         </el-form-item>
         <el-form-item label="广告图片" prop="image">
           <upload
-            @on-transport-file-list="handleTransportFileList()"
+            @on-transport-file-list="handleTransportFileList"
             :max-size="5120"
-            :limit="1"
-          >
+            :limit="1">
           </upload>
         </el-form-item>
-        <el-form-item label="开始时间" prop="effectAt">
+        <el-form-item label="开始时间" prop="effectiveTime">
           <el-date-picker
-            v-model="formValidate.effectAt"
+            v-model="formValidate.effectiveTime"
             value-format="yyyy-MM-dd HH:mm:ss"
-            type="date"
+            type="datetime"
             placeholder="选择日期">
           </el-date-picker>
         </el-form-item>
-        <el-form-item label="结束时间" prop="expireAt">
+        <el-form-item label="结束时间" prop="expirationTime">
           <el-date-picker
-            v-model="formValidate.expireAt"
+            v-model="formValidate.expirationTime"
             value-format="yyyy-MM-dd HH:mm:ss"
-            type="date"
+            type="datetime"
             placeholder="选择日期">
           </el-date-picker>
         </el-form-item>
@@ -105,9 +104,7 @@
 
     data() {
       return {
-        // model层
         model: 'slide',
-        typeValue: '',
         // 广告类型可选项
         typeOptions: [{
           value: '外部链接',
@@ -138,14 +135,12 @@
           location: '', //广告位
           title: '',  //广告标题
           image: '',  //广告图片
-          effectAt: '', //开始时间
-          expireAt: '', //结束时间
+          effectiveTime: '', //开始时间
+          expirationTime: '', //结束时间
           position: 0,  //排序数值
           link:'', //广告链接
           type: '', //广告类型
-          status:'启用' //广告状态
         },
-
         // 表单验证规则对象
         ruleValidate: {
           location: [{required: true, message: '不能为空', trigger: 'change'}],
@@ -155,7 +150,6 @@
           position: [{required: true, message: '不能为空', trigger: 'blur'}],
           type: [{required: true, message: '请选择', trigger: 'blur'}],
         },
-
         active: 1,
         data: [],
         page: 1,
@@ -174,33 +168,30 @@
         this.active = 1
         this.$emit('on-dialog-close')
       },
-
       // 确定
       handleConfirm(name, name1) {
         // 通知上传子组件将上传的图片地址返回给当前组件
         this.broadcast("SiUpload", "on-form-submit", () => {})
-        this.$refs[name].resetFields()
-        this.$refs[name1].resetFields()
         this.active = 1
         // 调用新增广告接口
         this.$nextTick(() => {
           this.$refs[name].validate(valid => {
-            if (valid) {
-              save({
-                [this.model]: this.formValidate,
-              }, res => {
-                this.$notify.success('添加成功')
-                this.$emit('on-save-success')
-              })
-            }
+            if (!valid) return false
+            save({
+              [this.model]: this.formValidate,
+            }, res => {
+              this.$message.success('添加成功')
+              this.handleClose()
+              this.$emit('onRefreshData')
+            })
           })
         })
       },
-
       // 将上传子组件传递回来的图书地址保存到
       handleTransportFileList(fileList) {
-        console.log(fileList)
-        if (fileList.length > 0) {
+        if (fileList.length === 0) {
+          this.formValidate.image = ''
+        } else {
           let arr = []
           fileList.forEach(item => {
             arr.push(item.response.data)
@@ -214,17 +205,16 @@
       next() {
         this.active++
       },
-
       onSelectId(id) {
-        switch (this.typeValue) {
+        switch (this.formValidate.type) {
           case "商品详情":
-            this.formValidate.link = `Goods:${id}`
+            this.formValidate.link = `Product:${id}`
             break
           case "图文详情":
-            this.formValidate.link = `Articles:${id}`
+            this.formValidate.link = `Post:${id}`
             break
         }
-      },
+      }
     }
   }
 </script>

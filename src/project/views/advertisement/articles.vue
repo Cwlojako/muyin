@@ -32,24 +32,20 @@
           </template>
         </el-table-column>
         <el-table-column prop="title" label="文章标题"></el-table-column>
-        <el-table-column prop="updateAt" label="修改时间"></el-table-column>
+        <el-table-column prop="createTime" label="创建时间"></el-table-column>
       </el-table>
     </el-col>
   </el-row>
 </template>
 <script>
-  import Search from "@/framework/components/search";
+  import Search from "@/framework/components/search"
   import Emitter from '@/framework/mixins/emitter'
+  import { search, count } from '@/project/service/post'
 
   export default {
-    name:'goods',
     mixins: [Emitter],
-
     data() {
       return {
-        categoryListName:[],
-        categoryListId:[],
-        model: "goods",
         editId: 0,//编辑id
         data: [],
         selectList: [],
@@ -65,28 +61,26 @@
           },
           {
             name: "关键字",
-            key: "keyword",
+            key: "content",
             type: "string"
           }
         ],
-        radio:0
+        radio: 0
       };
     },
+    props: {
+      articleId: {
+        type: Number,
+        default: 0
+      }
+    },
     created() {
-      this.$store.dispatch('GET_USER_CACHE')
       this.search(1)
     },
     components: {
-      Search,
+      Search
     },
     methods: {
-      handlePageSizeChange(pageSize) {
-        this.pageSize = pageSize;
-        this.search(1);
-      },
-      handlePageChange(page) {
-        this.search(page);
-      },
       searchBySearchItem(searchItems) {
         let keys = [];
         for (
@@ -100,7 +94,7 @@
         }
         for (let i in keys) {
           if (searchItems[keys[i]]) {
-            this.extraParam[keys[i]] = searchItems[keys[i]];
+            this.extraParam[keys[i]] = searchItems[keys[i]]
           } else {
             delete this.extraParam[keys[i]];
           }
@@ -108,59 +102,44 @@
         this.search(1);
       },
       search(page) {
-        let _t = this;
-        _t.page = page;
+        this.page = page
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
-          }
-        };
-        for(let key in _t.extraParam){
-          param[key] = _t.extraParam[key];
+            size: this.pageSize
+          },
+          post: this.extraParam
         }
-        searchGoods(param, res => {
-          let data = res;
-          _t.data = data;
-          _t.getTotal();
-        });
-      },
-      getTotal() {
-        let _t = this;
-        let param = {};
-        for (let key in _t.extraParam) {
-          param[key]=_t.extraParam[key];
-        }
-        countGoods(param, res => {
-          _t.total = parseInt(res);
-        });
-      },
-      handleCurrentChange(val) {
-        this.page = val;
-        this.search(this.page);
-      },
-      handleSizeChange(pageSize) {
-        this.pageSize = pageSize;
-        this.search(this.page);
-      },
-
-      onChange(val) {
-        this.$emit('on-select-id',val);
-      }
-    },
-    mounted() {
-      // 获取商品分类数据信息
-      getCategory({}, res => {
-        res.forEach(item => {
-          if(item.status=='已启用'){
-            this.categoryListName.push(item.name)
-            this.categoryListId.push(item.id)
-            this.searchItems[1].displayValue=this.categoryListName
-            this.searchItems[1].value=this.categoryListName
+        search(param, res => {
+          this.data = res
+          this.getTotal()
+          // 编辑模式下选中已选文章
+          if (this.articleId) {
+            this.radio = this.articleId
           }
         })
-      })
+      },
+      getTotal() {
+        let param = {
+          post: this.extraParam
+        }
+        count(param, res => {
+          this.total = parseInt(res);
+        })
+      },
+      handleCurrentChange(val) {
+        this.page = val
+        this.search(this.page)
+      },
+      handleSizeChange(pageSize) {
+        this.pageSize = pageSize
+        this.search(this.page)
+      },
+      onChange(val) {
+        console.log(val)
+        // 传递所选行的id值
+        this.$emit('on-select-id', val)
+      }
     }
   };
 </script>

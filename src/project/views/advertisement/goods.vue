@@ -32,24 +32,21 @@
           </template>
         </el-table-column>
         <el-table-column prop="name" label="商品名称&型号"></el-table-column>
-        <el-table-column prop="categoryName" label="商品分类"></el-table-column>
+        <el-table-column prop="category.name" label="商品分类"></el-table-column>
       </el-table>
     </el-col>
   </el-row>
 </template>
 <script>
-  import Search from "@/framework/components/search";
+  import Search from "@/framework/components/search"
   import Emitter from '@/framework/mixins/emitter'
+  import { search, count } from '@/project/service/product'
+  import { searchCategory } from '@/project/service/category'
 
   export default {
-    name:'goods',
     mixins: [Emitter],
-
     data() {
       return {
-        categoryListName:[],
-        categoryListId:[],
-        model: "goods",
         editId: 0,//编辑id
         data: [],
         selectList: [],
@@ -57,15 +54,16 @@
         page: 1,
         total: 0,
         extraParam: {},
+        categoryParam: {},
         searchItems: [
           {
             name: "商品名称",
-            key: "goodsName",
+            key: "name",
             type: "string"
           },
           {
             name: "商品分类",
-            key: "categoryId",
+            key: "category",
             type: "select",
             displayValue: [],
             value: []
@@ -74,20 +72,32 @@
         radio:0
       };
     },
+    props: {
+      productId: {
+        type: Number,
+        default: 0
+      }
+    },
     created() {
-      this.$store.dispatch('GET_USER_CACHE')
       this.search(1)
+      // 获取商品一级分类可选项
+      this.getCategoryOption()
     },
     components: {
-      Search,
+      Search
     },
     methods: {
-      handlePageSizeChange(pageSize) {
-        this.pageSize = pageSize;
-        this.search(1);
-      },
-      handlePageChange(page) {
-        this.search(page);
+      // 获取商品一级分类可选项
+      getCategoryOption() {
+        searchCategory({child: {}}, res => {
+          this.categoryOptions = res
+          let value = []
+          res.forEach(item => {
+            value.push(item.name)
+          })
+          this.searchItems.find(item => item.key === 'category').displayValue = value
+          this.searchItems.find(item => item.key === 'category').value = value
+        })
       },
       searchBySearchItem(searchItems) {
         let keys = [];
@@ -102,42 +112,53 @@
         }
         for (let i in keys) {
           if (searchItems[keys[i]]) {
-            this.extraParam[keys[i]] = searchItems[keys[i]];
+            this.extraParam[keys[i]] = searchItems[keys[i]]
+            if (keys[i] === 'category') delete this.extraParam[keys[i]]
           } else {
             delete this.extraParam[keys[i]];
           }
         }
+        // 处理分类搜索参数
+        if (searchItems.category) {
+          this.categoryParam = {
+            name: searchItems.category
+          }
+        } else {
+          delete this.categoryParam
+        }
         this.search(1);
       },
       search(page) {
-        let _t = this;
-        _t.page = page;
+        this.page = page
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
-          }
-        };
-        for(let key in _t.extraParam){
-          param[key] = _t.extraParam[key];
+            size: this.pageSize
+          },
+          product: this.extraParam,
+          category: this.categoryParam
         }
-        searchGoods(param, res => {
-          console.log(res)
-          let data = res;
-          _t.data = data;
-          _t.getTotal();
-        });
+        // 如果参数不需要则清除
+        if (JSON.stringify(param.category) === "{}") delete param.category
+        search(param, res => {
+          this.data = res
+          this.getTotal()
+          // 编辑模式下选中已选商品
+          if (this.productId) {
+            this.radio = this.productId
+          }
+        })
       },
       getTotal() {
-        let _t = this;
-        let param = {};
-        for (let key in _t.extraParam) {
-          param[key]=_t.extraParam[key];
+        let param = {
+          product: this.extraParam,
+          category: this.categoryParam
         }
-        countGoods(param, res => {
-          _t.total = parseInt(res);
-        });
+        // 如果参数不需要则清除
+        if (JSON.stringify(param.category) === "{}") delete param.category
+        count(param, res => {
+          this.total = parseInt(res);
+        })
       },
       handleCurrentChange(val) {
         this.page = val;
@@ -147,24 +168,11 @@
         this.pageSize = pageSize;
         this.search(this.page);
       },
-
       onChange(val) {
+        console.log(val)
         // 传递所选行的id值
-        this.$emit('on-select-id',val);
+        this.$emit('on-select-id', val);
       }
-    },
-    mounted() {
-      // 获取商品分类数据信息
-      getCategory({}, res => {
-        res.forEach(item => {
-          if(item.status=='已启用'){
-            this.categoryListName.push(item.name)
-            this.categoryListId.push(item.id)
-            this.searchItems[1].displayValue=this.categoryListName
-            this.searchItems[1].value=this.categoryListName
-          }
-        })
-      })
     }
   };
 </script>

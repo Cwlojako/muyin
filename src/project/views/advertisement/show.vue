@@ -23,11 +23,11 @@
         </div>
         <div class="text-item">
           <span class="text_label">开始时间：</span>
-          {{slide.effectAt}}
+          {{slide.effectiveTime}}
         </div>
         <div class="text-item">
           <span class="text_label">结束时间：</span>
-          {{slide.expireAt}}
+          {{slide.expirationTime}}
         </div>
         <div class="text-item">
           <span class="text_label">排序数字：</span>
@@ -36,9 +36,10 @@
         <div class="text-item">
           <span class="text_label">广告图片：</span>
           <img
-            style="width: 50px; height: 50px;border-radius: 40px;"
-            :src=$store.state.prefix+slide.image
-            @click="imgVisible = true" />
+            v-if='slide.image'
+            :src='`${$store.state.prefix}${slide.image}`'
+            @click="imgVisible = true"
+            class='ad-image'/>
         </div>
       </el-card>
     </el-col >
@@ -54,18 +55,35 @@
               <span class="text_label">链接：</span>
               {{slide.link}}
             </div>
+            <div class="text item" v-if='type === "商品详情"'>
+              <span class="text_label">商品名称：</span>
+              {{product.name}}
+            </div>
+            <div class="text item" v-if='type === "图文详情"'>
+              <span class="text_label">图文详情：</span>
+              <div class='content-wrapper'>
+                <h4>{{post.content}}</h4>
+                <div class='content-img-wrapper' v-if='post.images'>
+                  <el-image
+                    v-for='(item, index) in post.images.split(";")'
+                    :key='index'
+                    :src="$store.state.prefix + item"
+                    :fit="'fit'">
+                  </el-image>
+                </div>
+              </div>
+            </div>
           </el-tab-pane>
         </el-tabs>
       </el-card>
     </el-col>
-
-
     <i-edit
       :dialog-visible="editProps.visible"
-      :id="editId"
+      :id="id"
       @on-dialog-close="handleClose"
-      @on-save-success="handleSaveSuccess"
+      @onRefreshData="get"
     ></i-edit>
+    <!-- 查看图片 -->
     <el-dialog
       title="查看图片"
       :visible.sync="imgVisible"
@@ -78,42 +96,29 @@
 </template>
 
 <script>
-  import {get} from '@/project/service/slide'
+  import { get } from '@/project/service/slide'
+  import { findById } from '@/project/service/product'
+  import { getPost } from '@/project/service/post'
   import previewImg from '@/framework/components/previewImg/previewImg.vue'
   import IEdit from './edit'
 
   export default {
-    name: "show",
     components: {
       IEdit, previewImg
     },
     data() {
       return {
+        activeName: 'first',
         slide: {},
+        product: {},
+        post: {},
         editProps: {
           visible: false
         },
         imgVisible: false,
-        sercetVisible: false,
         id: this.$route.params.id,
-        editId: 0,
-        activeName: 'first',
-        page: 1,
-        pageSize: 10,
-        sort: {desc: ['id']},
-        roleList: [],
-        total: 0,
-        ruleForm: {
-          pass: '',
-          checkPass: '',
-        },
-        data: [],
-        defaultProps: {
-          children: 'children',
-          label: 'label'
-        },
-        defaultList:[],
-        model:'slide'
+        model: 'slide',
+        type: ''
       }
     },
     created() {
@@ -122,73 +127,52 @@
     methods: {
       get() {
         get({id: this.id}, res => {
-          this.slide = res;
-        });
-      },
-      handleClose() {
-        this.editProps.visible = false;
-        this.imgVisible = false;
-      },
-      handleCheckChange(data,isSelect){
-        console.log(data);
-        console.log(isSelect);
-        if (!data.children) {
-          if (isSelect) {
-            addModule({roleId:this.id,moduleId:data.id},res => {
-              this.$message.success('添加成功');
-            })
-          }else {
-            removeModule({roleId:this.id,moduleId:data.id},res => {
-              this.$message.success('删除成功');
+          this.slide = res
+          this.type = res.type
+          if (this.type === '商品详情') {
+            let productId = res.link.split(':')[1]
+            findById({id: productId}, res => {
+              this.product = res
             })
           }
-        }
+          if (this.type === '图文详情') {
+            let postId = res.link.split(':')[1]
+            getPost({id: postId}, res => {
+              this.post = res
+            })
+          }
+        })
+      },
+      handleClose() {
+        this.editProps.visible = false
+        this.imgVisible = false
       },
       handleClick(command){
         switch (command) {
           case '编辑':
-            this.editId = this.id;
-            this.editProps.visible = true;
-            break;
+            this.editProps.visible = true
+            break
         }
-      },
-      getMenu(){
-        findAll({},res => {
-          let list = res.map((s,i) => {
-            let arr = s.moduleList.map((item,index) => {
-              let obj = {
-                id:item.id,
-                label:item.name,
-                path: item.path
-              };
-              return obj;
-            });
-            return {
-              id:s.id,
-              label:s.name,
-              children:arr
-            }
-
-          });
-          this.data = list;
-        })
-      },
-      findByRoleId(){
-        findByRoleId({roleId:this.id},res => {
-          this.defaultList = res.map(s => {
-            return s.id;
-          });
-          this.getMenu();
-        })
-      },
-      handleSaveSuccess(){
-        this.get();
-        this.editProps.visible = false;
       }
     }
   }
 </script>
 
-<style scoped>
-
+<style lang='less' scoped>
+  .ad-image {
+    margin: 5px 0;
+    width: 150px;
+    vertical-align: top;
+  }
+  .content-img-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100%;
+    .el-image {
+      flex: 0 0 33.33%;
+      box-sizing: border-box;
+      padding: 5px;
+      width: 33.33%
+    }
+  }
 </style>

@@ -1,13 +1,12 @@
 import axios from '@/framework/http/axios'
-const model = 'slide';
+const model = 'feedback';
 let getUrl = `api/${model}/get`;
 let searchUrl = `api/${model}/search`;
 let countUrl = `api/${model}/count`;
 let deleteByIdUrl = `api/${model}/deleteById`;
-let enableUrl = `api/${model}/enable`;
-let disableUrl = `api/${model}/disable`;
-let saveUrl = `api/${model}/save`
-let updateUrl = `api/${model}/update`
+let batchDeleteUrl = `api/${model}/batchDelete`;
+let closeUrl = `api/${model}/close`;
+let batchCloseUrl = `api/${model}/batchClose`;
 
 export function get(param, callback) {
   axios.post(getUrl, param).then(data => {
@@ -45,38 +44,29 @@ export function deleteById(param, callback) {
   })
 }
 
-export function enable(param, callback) {
-  axios.post(enableUrl, param).then(data => {
-    if (data !== undefined && data !== '' && data !== null) {
-      // callback when data is exist
-      callback(data)
-    }
-  })
+export function batchDelete(param, callback) {
+    axios.post(batchDeleteUrl, param).then(data => {
+        if (data !== undefined && data !== '' && data !== null) {
+        // callback when data is exist
+        callback(data)
+        }
+    })
 }
 
-export function disable(param, callback) {
-  axios.post(disableUrl, param).then(data => {
-    if (data !== undefined && data !== '' && data !== null) {
-      // callback when data is exist
-      callback(data)
-    }
-  })
+export function close(param, callback) {
+    axios.post(closeUrl, param).then(data => {
+        if (data !== undefined && data !== '' && data !== null) {
+        // callback when data is exist
+        callback(data)
+        }
+    })
 }
 
-export function save(param, callback) {
-  axios.post(saveUrl, param).then(data => {
-    if (data !== undefined && data !== '' && data !== null) {
-      // callback when data is exist
-      callback(data)
-    }
-  })
-}
-
-export function update(param, callback) {
-  axios.post(updateUrl, param).then(data => {
-    if (data !== undefined && data !== '' && data !== null) {
-      // callback when data is exist
-      callback(data)
-    }
-  })
+export function batchClose(param, callback) {
+    axios.post(batchCloseUrl, param).then(data => {
+        if (data !== undefined && data !== '' && data !== null) {
+        // callback when data is exist
+        callback(data)
+        }
+    })
 }

@@ -10,8 +10,8 @@
         <el-step title="步骤 1"></el-step>
         <el-step title="步骤 2"></el-step>
       </el-steps>
-      <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px" v-if="active === 1">
-        <el-form-item label="广告位" prop="title">
+      <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px" v-show="active === 1">
+        <el-form-item label="广告位" prop="location">
           <el-select v-model="formValidate.location" placeholder="请选择">
             <el-option
               v-for="item in locationOptions"
@@ -24,28 +24,30 @@
         <el-form-item label="广告标题" prop="title">
           <el-input v-model="formValidate.title" placeholder="输入标题"></el-input>
         </el-form-item>
-        <el-form-item label="广告图片" prop="title">
-          <upload
-            @on-transport-file-list="handleTransportFileList"
-            :file-list="formValidate.image ? formValidate.image.split(';') :[]"
-            :max-size="5120"
-            :limit="1"
-          >
-          </upload>
+        <el-form-item label="广告图片" prop="image">
+          <transition name='opacity'>
+            <upload
+              @on-transport-file-list="handleTransportFileList"
+              :file-list="formValidate.image ? formValidate.image.split(';') :[]"
+              v-if='isFinished'
+              :max-size="5120"
+              :limit="1">
+            </upload>
+          </transition>
         </el-form-item>
-        <el-form-item label="开始时间" prop="subTitle">
+        <el-form-item label="开始时间" prop="effectiveTime">
           <el-date-picker
-            v-model="formValidate.effectAt"
+            v-model="formValidate.effectiveTime"
             value-format="yyyy-MM-dd HH:mm:ss"
-            type="date"
+            type="datetime"
             placeholder="选择日期">
           </el-date-picker>
         </el-form-item>
-        <el-form-item label="结束时间" prop="subTitle">
+        <el-form-item label="结束时间" prop="expirationTime">
           <el-date-picker
-            v-model="formValidate.expireAt"
+            v-model="formValidate.expirationTime"
             value-format="yyyy-MM-dd HH:mm:ss"
-            type="date"
+            type="datetime"
             placeholder="选择日期">
           </el-date-picker>
         </el-form-item>
@@ -55,7 +57,7 @@
       </el-form>
       <el-form :model="formValidate" v-if="active === 2">
         <el-form-item label="广告类型" prop="title">
-          <el-select v-model="typeValue" placeholder="请选择" @change="changeType">
+          <el-select v-model="formValidate.type" placeholder="请选择">
             <el-option
               v-for="item in typeOptions"
               :key="item.value"
@@ -64,18 +66,17 @@
             </el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="外部链接" prop="title" v-if="formValidate.type === 'http' && typeValue === '外部链接'">
+        <el-form-item label="外部链接" prop="title" v-if="formValidate.type === '外部链接'">
           <el-input v-model="formValidate.link" placeholder="输入链接"></el-input>
         </el-form-item>
-        <goods @on-select-id="onSelectId" v-if="formValidate.type === 'object' && typeValue === '商品详情'"></goods>
-        <articles @on-select-id="onSelectId" v-if="formValidate.type === 'object' && typeValue === '图文详情'"></articles>
+        <goods @on-select-id="onSelectId" v-if="formValidate.type === '商品详情'" :productId='productId'></goods>
+        <articles @on-select-id="onSelectId" v-if="formValidate.type === '图文详情'" :articleId='articleId'></articles>
       </el-form>
-
     </div>
     <div slot="footer" class="dialog-footer">
       <el-button type="info" @click="pre" v-if="active === 2">上一步</el-button>
       <el-button type="info" @click="next" v-if="active === 1">下一步</el-button>
-      <el-button type="primary" @click="handleConfirm" v-if="active === 2">确 定</el-button>
+      <el-button type="primary" @click="handleConfirm('formValidate')" v-if="active === 2">确 定</el-button>
     </div>
   </el-dialog>
 </template>
@@ -91,7 +92,6 @@
   import {search, count} from "@/project/service/store"
 
   export default {
-    name: "advertisementEdit",
     mixins: [emitter],
     components: {
       Upload, Editor, Search, goods, articles
@@ -106,11 +106,17 @@
         default: 0
       }
     },
-
     data() {
+      const validateImage = (rule, value, callback) => {
+        if (this.formValidate.cover === '') {
+          callback("广告图不能为空")
+        } else {
+          callback();
+        }
+      }
       return {
         model: 'slide',
-        typeValue: '',
+        isFinished: false,
         // 广告类型可选项
         typeOptions: [{
           value: '外部链接',
@@ -122,7 +128,6 @@
           value: '图文详情',
           label: '图文详情'
         }],
-
         // 广告位可选项
         locationOptions: [
           {
@@ -140,19 +145,18 @@
           location: '', //广告位
           title: '',  //广告标题
           image: '',  //广告图片
-          effectAt: '', //开始时间
-          expireAt: '', //结束时间
+          effectiveTime: '', //开始时间
+          expirexpirationTimeeAt: '', //结束时间
           position: 0,  //排序数值
           link:'', //广告链接
           type: '', //广告类型
-          status:'启用' //广告状态
         },
         ruleValidate: {
           location: [{required: true, message: '不能为空', trigger: 'change'}],
           title: [{required: true, message: '不能为空', trigger: 'blur'}],
-          image: [{required: true, message: '不能为空'}],
-          effectAt: [{required: true, message: '不能为空', trigger: 'blur'}],
-          expireAt: [{required: true, message: '不能为空', trigger: 'blur'}],
+          image: [{validator: validateImage}],
+          effectiveTime: [{required: true, message: '不能为空', trigger: 'blur'}],
+          expirationTime: [{required: true, message: '不能为空', trigger: 'blur'}],
           position: [{required: true, message: '不能为空', trigger: 'blur'}],
           type: [{required: true, message: '请选择', trigger: 'blur'}]
         },
@@ -169,24 +173,32 @@
     methods: {
       handleClose() {
         this.active = 1
-        this.$emit('on-dialog-close');
+        this.$emit('on-dialog-close')
+        this.isFinished = false
       },
-      handleConfirm() {
-        update({
-          [this.model]: this.formValidate,
-        }, res => {
-          this.$notify.success('添加成功');
-          this.active = 1
-          this.$emit('on-save-success');
+      handleConfirm(name) {
+        this.$refs[name].validate(valid => {
+          if (!valid) return false
+          let param = Object.assign({id: this.id}, this.formValidate)
+          update({
+            [this.model]: param,
+          }, res => {
+            this.$message.success('编辑更新成功')
+            this.handleClose()
+            this.active = 1
+            this.$emit('onRefreshData')
+          })
         })
       },
       handleTransportFileList(fileList) {
-        if (fileList.length > 0) {
+        if (fileList.length === 0) {
+          this.formValidate.image = ''
+        } else {
           let arr = []
           fileList.forEach(item => {
             arr.push(item.response.data);
           });
-          this.formValidate.image = arr.join(';');
+          this.formValidate.image = arr.join(';')
         }
       },
       pre() {
@@ -198,38 +210,25 @@
       },
       onSelectId(id) {
         // 接收到id值
-        switch (this.typeValue) {
+        switch (this.formValidate.type) {
           case "商品详情":
-            this.formValidate.link = `Goods:${id}`;
+            this.formValidate.link = `Product:${id}`;
             break;
           case "图文详情":
-            this.formValidate.link = `Articles:${id}`;
+            this.formValidate.link = `Post:${id}`;
             break;
-        }
-      },
-      changeType(val) {
-        if (val === '外部链接') {
-          this.formValidate.type = 'http';
-        } else {
-          this.formValidate.type = 'object';
         }
       },
       get(id) {
         get({id: id}, res => {
-          this.formValidate = res;
-          if (this.formValidate.type === 'http') {
-            this.typeValue = '外部链接';
-          } else {
-            let arr = this.formValidate.link.split(':');
-            switch (arr[0]) {
-              case 'Goods' :
-                this.typeValue = '商品详情'
-                break
-              case 'Articles':
-                this.typeValue = '图文详情'
-                break
-            }
+          this.formValidate = res
+          let type = res.type
+          if (type === '图文详情') {
+            this.articleId = parseInt(res.link.split(':')[1])
+          } else if (type === '商品详情') {
+            this.productId = parseInt(res.link.split(':')[1])
           }
+          this.isFinished = true
         })
       }
     }
