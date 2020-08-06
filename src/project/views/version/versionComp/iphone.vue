@@ -48,9 +48,9 @@
     <!--    新建-->
     <i-create
       :dialog-visible="createProps.visible"
-      :platform="messageType"
+      :platform="platform"
       @on-dialog-close="handleClose"
-      @on-save-success="onSaveSuccess"
+      @onRefreshData="search(page)"
     />
   </el-row>
 </template>
@@ -58,13 +58,13 @@
 <script>
   import ICreate from "../create"
   import Emitter from '@/framework/mixins/emitter'
-  import {search, count} from '@/project/service/version'
+  import {search, count} from '@/project/service/application'
 
   export default {
     mixins: [Emitter],
     data() {
       return {
-        model: "version",
+        model: "application",
         createProps: {
           visible: false
         },
@@ -73,7 +73,7 @@
         page: 1,
         total: 0,
         extraParam: {},
-        messageType:'iphone',
+        platform:'iphone',
       };
     },
     components: {
@@ -84,33 +84,26 @@
         this.createProps.visible = true;
       },
       search(page) {
-        let _t = this;
-        _t.page = page;
-        _t.extraParam = {
-          platform: this.messageType
+        this.page = page
+        this.extraParam = {
+          platform: this.platform
         };
         let param = {
           pageable: {
             page: page,
-            size: _t.pageSize,
-            sort: _t.sort
+            size: this.pageSize
           },
-          [this.model]: _t.extraParam
+          [this.model]: this.extraParam
         };
         search(param, res => {
-          let data = res.map (s => {
-            s.isOptional  = s.isOptional ? '是' : '否';
-            return s;
-          });
-          _t.data = data;
-          _t.getTotal();
-        });
+          this.data = data
+          this.getTotal()
+        })
       },
       getTotal() {
-        let _t = this;
-        let param = {[this.model]: _t.extraParam};
+        let param = {[this.model]: this.extraParam}
         count(param, res => {
-          _t.total = parseInt(res);
+          this.total = parseInt(res)
         });
       },
 
@@ -119,21 +112,16 @@
       },
 
       handleCurrentChange(val) {
-        this.page = val;
-        this.search(this.page);
+        this.page = val
+        this.search(this.page)
       },
       handleSizeChange(pageSize) {
-        this.pageSize = pageSize;
-        this.search(this.page);
-      },
-
-      onSaveSuccess(){
-        this.search(this.page);
-        this.handleClose();
+        this.pageSize = pageSize
+        this.search(this.page)
       }
     },
     mounted() {
-      this.search(1);
+      this.search(1)
     }
   };
 </script>

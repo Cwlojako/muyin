@@ -5,30 +5,28 @@
     :modal-append-to-body='false'
     width="60%"
     :before-close="handleClose">
-    <!--    <div style="overflow: auto;height:40vh;padding: 10px 0 40px;">-->
     <el-form ref="formValidate" :model="formValidate" :rules="ruleValidate" label-width="150px">
-      <el-form-item label="图文详情" prop="content">
-        <Editor :defaultContent="formValidate.content" @on-change-content="onChangeEditor"/>
+      <el-form-item label="图文详情" prop="description">
+        <Editor :defaultContent="formValidate.description" @on-change-content="onChangeEditor"/>
       </el-form-item>
     </el-form>
     <!--    </div>-->
     <div slot="footer" class="dialog-footer">
       <el-button @click="handleClose">取 消</el-button>
-      <el-button type="primary" @click="handleConfirm">确 定</el-button>
+      <el-button type="primary" @click="handleConfirm('formValidate')">确 定</el-button>
     </div>
   </el-dialog>
 </template>
 
 <script>
-  import Upload from "@/framework/components/upload";
   import Editor from "@/framework/components/editor"
   import Emitter from '@/framework/mixins/emitter'
+  import { update, findById } from '@/project/service/product'
 
   export default {
     mixins: [Emitter],
-    name: "edit",
     components: {
-      Upload,Editor
+      Editor
     },
     props: {
       dialogVisible: {
@@ -42,54 +40,43 @@
     },
     data() {
       return {
-        categoryList:[],
-        show: false,
-
         formValidate: {
+          description: ''
         },
         ruleValidate: {
-          name: [{required: true, message: '不能为空', trigger: 'blur'}],
-        },
-
+          description: [{required: true, message: '不能为空', trigger: 'blur'}],
+        }
       }
-    },
-    created() {
-      cosnole.log(this.id)
     },
     methods: {
       onChangeEditor(val){
-        this.formValidate.content = val.html;
+        this.formValidate.description = val.html;
       },
       handleClose() {
-        // this.visible = false;
         this.$emit('on-dialog-close');
       },
-      handleConfirm() {
-        update({page: this.formValidate}, res => {
-          this.$notify.success('修改成功');
-          this.$emit('on-save-success');
+      handleConfirm(name) {
+        this.$refs[name].validate(valid => {
+          if (!valid) return false
+          let param = Object.assign({id: this.id}, this.formValidate)
+          update({product: param}, res => {
+            this.$message.success('更新编辑成功')
+            this.handleClose()
+            this.$emit('onRefreshData')
+          })
         })
       },
-      handleTransportFileList(e) {
-        console.log(e)
-        this.formValidate.thumbnail = e[0].response.data
-      },
-      handleTransportFileList2(e) {
-        console.log(e)
-        this.formValidate.blueprint = e[0].response.data
-      },
       findById() {
-        // if (this.id) {
-        //   get({id:this.id},res => {
-        //     this.formValidate = res;
-        //   })
-        // }
+        if (this.id) {
+          findById({id: this.id},res => {
+            this.formValidate = res
+          })
+        }
       }
     },
     watch: {
-      dialogVisible(e) {
-        this.show = false
-        if(e){
+      dialogVisible(val) {
+        if (val) {
           this.findById()
         }
       }

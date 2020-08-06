@@ -12,37 +12,43 @@
             </el-button>
             <el-dropdown-menu slot="dropdown">
               <!-- <el-dropdown-item command="信息编辑">编辑</el-dropdown-item> -->
-              <el-dropdown-item 
+              <el-dropdown-item
+                icon='el-icon-upload2'
                 command="上架"
                 :disabled="product.sellable"
                 :style="product.sellable ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
                 上架
               </el-dropdown-item>
               <el-dropdown-item 
+                icon='el-icon-download'
                 command="下架"
                 :disabled="!product.sellable"
                 :style="!product.sellable ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
                 下架
               </el-dropdown-item>
               <el-dropdown-item 
+                icon='el-icon-star-on'
                 command="设置推荐"
                 :disabled="product.featured"
                 :style="product.featured ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
                 设置推荐
               </el-dropdown-item>
-              <el-dropdown-item 
+              <el-dropdown-item
+                icon='el-icon-star-off'
                 command="取消推荐"
                 :disabled="!product.featured"
                 :style="!product.featured ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
                 取消推荐
               </el-dropdown-item>
-              <el-dropdown-item 
+              <el-dropdown-item
+                icon='el-icon-s-goods'
                 command="设置热门"
                 :disabled="product.salable"
                 :style="product.salable ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
                 设置热门
               </el-dropdown-item>
-              <el-dropdown-item 
+              <el-dropdown-item
+                icon='el-icon-goods'
                 command="取消热门"
                 :disabled="!product.salable"
                 :style="!product.salable ? {'color':'rgba(255,255,255,0.4)','cursor': 'not-allowed'}:{'color':'#fff'}">
@@ -128,14 +134,55 @@
         </el-table>
         <div>
           <h4>库存价格管理</h4>
+          <el-form inline ref='stockFormValidate' :model='stockFormValidate'>
+            <el-form-item label="销售价" prop="salePrice">
+              <el-input v-model="stockFormValidate.salePrice" placeholder="请输入销售价"></el-input>
+            </el-form-item>
+            <el-form-item label="原价" prop="originalPrice">
+              <el-input v-model="stockFormValidate.originalPrice" placeholder="请输入原价"></el-input>
+            </el-form-item>
+            <el-form-item label="库存" prop="stocks">
+              <el-input v-model="stockFormValidate.stocks" placeholder="请输入库存"></el-input>
+            </el-form-item>
+          </el-form>
+          <el-button type="primary" class="quick-input-btn" @click='quickText'>一键填充</el-button>
+          <el-button type="info" class="submit" @click='submit'>提交</el-button>
         </div>
         <el-table
           :data="stockData">
+          <el-table-column type="index" width="50"></el-table-column>
           <el-table-column :prop='item.name' :label="item.name" v-for='(item, index) in specData' :key='index'></el-table-column>
-          <el-table-column prop="sellPrice" label="销售价(元)"></el-table-column>
-          <el-table-column prop="origPrice" label="原价(元)"></el-table-column>
-          <el-table-column prop="stock" label="库存"></el-table-column>
-          <el-table-column prop="img" label="图片"></el-table-column>
+          <el-table-column prop="sellPrice" label="销售价(元)">
+            <template slot-scope='scope'>
+              <el-input v-model='sellPriceArr[scope.$index]' class='stock-input'></el-input>
+            </template>
+          </el-table-column>
+          <el-table-column prop="originalPrice" label="原价(元)">
+            <template slot-scope='scope'>
+              <el-input v-model='originalPriceArr[scope.$index]' class='stock-input'></el-input>
+            </template>
+          </el-table-column>
+          <el-table-column prop="stocks" label="库存">
+            <template slot-scope='scope'>
+              <el-input v-model='stocksArr[scope.$index]' class='stock-input'></el-input>
+            </template>
+          </el-table-column>
+          <el-table-column prop="img" label="图片">
+            <template slot-scope="scope">
+              <el-upload
+                class="avatar-uploader"
+                action="/api/attachment/upload"
+                :show-file-list="false"
+                :on-success="handleSuccess">
+                <img :src='`${$store.state.prefix}${imageUrlArr[scope.$index]}`' 
+                  v-if="imageUrlArr[scope.$index]" 
+                  style='width: 50px; height: 50px;border-radius: 5px;'
+                  @click='handleUpload(scope.$index)'
+                />
+                <el-link v-else type="primary" @click='handleUpload(scope.$index)'>请选择</el-link>
+              </el-upload>
+            </template>
+          </el-table-column>
         </el-table>
       </el-card>
     </el-col>
@@ -210,15 +257,7 @@
             </el-dropdown-menu>
           </el-dropdown>
         </div>
-        <div class="good-text">图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情
-          图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情
-          图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情
-          图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情
-          图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情
-          图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情图文详情</div>
-        <div class="good-img">
-          <!-- <img :src="avatar" ref="goodsImg"> -->
-        </div>
+        <div class="good-text" v-html='product.description'></div>
       </el-card>
     </el-col>
     <!--    基本信息编辑弹框-->
@@ -258,7 +297,7 @@
     <text-edit
       :dialog-visible="textEditProps.visible"
       @on-dialog-close="handleClose"
-      @on-save-success="handleSave"
+      @onRefreshData="findById"
       :id="id"
     />
     <!--添加商品规格弹框-->
@@ -379,6 +418,11 @@
         specRuleValidate: {
           name: [{required: true, message: '规格名称不能为空', trigger: 'blur'}]
         },
+        stockFormValidate: {
+          originalPrice: null,
+          salePrice: null,
+          stocks: null
+        },
         // 添加或者编辑规格（“添加”，“编辑”）
         type: '添加',
         // 当前编辑规格的id
@@ -415,7 +459,14 @@
             stock: 50
           }
         ],
-        data: []
+        data: [],
+        // 上传图片绑定数组
+        imageUrlArr: [],
+        // 销售价绑定数组
+        sellPriceArr: [],
+        originalPriceArr: [],
+        stocksArr: [],
+        uploadId: null
       }
     },
     created() {
@@ -425,13 +476,25 @@
       this.getSpec()
     },
     methods: {
+      // 显示新增规格弹框
+      showAddSpec() {
+        this.addSpecItemVisible = true
+        this.type = '添加'
+        this.dynamicTags = []
+        this.specFormValidate.name = ''
+      },
+      // 显示编辑规格弹框
+      editSpec(row) {
+        this.addSpecItemVisible = true
+        this.type = '编辑'
+        this.specFormValidate.name = row.name
+        this.dynamicTags = row.value
+        // 记录当前修改行的index
+        this.updateIndex = this.specData.findIndex(item => item.name === row.name)
+        this.attributeId = row.id
+      },
       // 确认添加或编辑规格
       handleAddSpec(type) {
-        let param = {
-          name: this.specFormValidate.name,
-          value: this.dynamicTags,
-          id: this.attributeId
-        }
         this.$refs.specFormValidate.validate(valid => {
           if (type === '添加') {
             if (valid) {
@@ -462,12 +525,16 @@
               })
             } 
           } else {
+            let param = {
+              name: this.specFormValidate.name,
+              value: this.dynamicTags,
+              id: this.attributeId // 编辑规格id
+            }
             this.$refs.specFormValidate.validate(valid => {
               if (valid) {
                 this.addSpecItemVisible = false
                 this.specData.splice(this.updateIndex, 1)
                 this.specData.splice(this.updateIndex, 0, param)
-                console.log(this.attributeId)
                 // 发送更新编辑规格请求
                 update({attribute: {id: this.attributeId, name: this.specFormValidate.name}}, res => {
                   this.$message.success('编辑规格成功')
@@ -521,23 +588,6 @@
           }
         }
       },
-      // 显示新增规格弹框
-      showAddSpec() {
-        this.addSpecItemVisible = true
-        this.type = '添加'
-        this.dynamicTags = []
-        this.specFormValidate.name = ''
-      },
-      // 显示编辑规格弹框
-      editSpec(row) {
-        this.addSpecItemVisible = true
-        this.type = '编辑'
-        this.specFormValidate.name = row.name
-        this.dynamicTags = row.value
-        // 记录当前修改行的index
-        this.updateIndex = this.specData.findIndex(item => item.name === row.name)
-        this.attributeId = row.id
-      },
       // 删除规格
       deleteSpec(row) {
         this.$confirm(`确定删除该条规格属性吗？`, '删除提示', {
@@ -582,32 +632,24 @@
               value.push(item1.text)
             })
             param.value = value
-            // this.valueListArr.push(value)
+            this.valueListArr.push(value)
             this.specData.push(param)
           })
-          // 获取库存列表数据
-          // 伪数组转化为数组
-          // let arr = Array.prototype.slice.call(this.valueListArr)
-          // let result = reduceMutipleArr(arr)
-          // console.log(result)
-          // for(let i = 0, len = result.length; i < len; i++) {
-          //   let param = {}
-          //   for(let j = 0, len = this.specData.length; j < len; j++) {
-          //     param[this.specData[j].name] = result[i].split('-')[j]
-          //   }
-          //   this.stockData.push(param)
-          // }
-          // console.log(this.stockData)
+          this.generateStockData(this.valueListArr)
         })
       },
       // 动态生成库存列表数据
       generateStockData(valueListArr) {
+        this.stockData = []
         // 伪数组转化为数组
         let arr = Array.prototype.slice.call(this.valueListArr)
         // 组合动态生成表格数据
         let result = reduceMutipleArr(arr)
-        console.log(result)
         for(let i = 0, len = result.length; i < len; i++) {
+          this.imageUrlArr.push('')
+          this.sellPriceArr.push('')
+          this.originalPriceArr.push('')
+          this.stocksArr.push('')
           let param = {}
           for(let j = 0, len = this.specData.length; j < len; j++) {
             param[this.specData[j].name] = result[i].split('-')[j]
@@ -722,7 +764,6 @@
         }
         this.search(1);
       },
-
       // 用户详情列表查询交易记录
       search(page) {
         let _t = this;
@@ -747,7 +788,6 @@
           _t.getTotal();
         });
       },
-
       // 分页组件监听函数
       // 监听当前页数变换
       handleCurrentChange(val) {
@@ -775,6 +815,32 @@
         this.imgVisible = false
       },
       handleSave() {},
+      // 上传图片成功
+      handleSuccess(val) {
+        this.imageUrlArr.splice(this.uploadId, 1)
+        this.imageUrlArr.splice(this.uploadId, 0, val.data)
+      },
+      handleUpload(index) {
+        this.uploadId = index
+      },
+      // 一键填充
+      quickText() {
+        for(let i = 0, len = this.sellPriceArr.length; i < len; i++) {
+          this.sellPriceArr.splice(i, 1)
+          this.sellPriceArr.splice(i, 0, this.stockFormValidate.salePrice)
+          this.originalPriceArr.splice(i, 1)
+          this.originalPriceArr.splice(i, 0, this.stockFormValidate.originalPrice)
+          this.stocksArr.splice(i, 1)
+          this.stocksArr.splice(i, 0, this.stockFormValidate.stocks)
+        }
+      },
+      // 提交库存列表
+      submit() {
+        console.log(this.sellPriceArr)
+        console.log(this.originalPriceArr)
+        console.log(this.stocksArr)
+        console.log(this.imageUrlArr)
+      }
     },
     filters: {
       updateList(val) {
@@ -823,5 +889,14 @@
     &:first-child {
       margin-left: 0;
     }
+  }
+  .el-dropdown-menu {
+    width: 140px;
+  }
+  .quick-input-btn {
+    margin-bottom: 5px;
+  }
+  .stock-input {
+    width: 80px;
   }
 </style>

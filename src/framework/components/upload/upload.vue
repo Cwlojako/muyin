@@ -66,7 +66,7 @@ export default {
     //上传大小,单位为kb
     maxSize: {
       type: Number,
-      default: 1024
+      default: 51200
     },
     //接收类型
     accept: {
@@ -130,8 +130,6 @@ export default {
       // this.defaultList.push(file);
       // 深拷贝
       this.defaultList = JSON.parse(JSON.stringify(fileList));
-      this.$emit('on-success-thumbnail', this.defaultList)
-      this.$emit('on-success-images', this.defaultList)
     },
 
     // 预览图片
