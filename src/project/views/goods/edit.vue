@@ -49,7 +49,12 @@
             :limit="5"
             v-if='isImagesFinished'>
           </upload>
-      </transition>
+        </transition>
+        <upload
+          :type="'video'"
+          :max-size="5120"
+          :limit="5">
+        </upload>
         <span class="upload-tip">*建议上传图片尺寸200*200，上传本地图片，最多5张，第一张图片默认为商品主图</span>
       </el-form-item>
     </el-form>

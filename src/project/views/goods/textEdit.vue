@@ -35,7 +35,11 @@
       },
       id: {
         type: [Number,String],
-        default: 0,
+        default: 0
+      },
+      description: {
+        type: String,
+        default: ''
       }
     },
     data() {
@@ -65,24 +69,7 @@
             this.$emit('onRefreshData')
           })
         })
-      },
-      findById() {
-        if (this.id) {
-          findById({id: this.id},res => {
-            this.formValidate = res
-          })
-        }
       }
-    },
-    watch: {
-      dialogVisible(val) {
-        if (val) {
-          this.findById()
-        }
-      }
-    },
-    created() {
-      this.findById()
     }
   }
 </script>

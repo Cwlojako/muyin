@@ -38,6 +38,30 @@
          <div class="el-upload__text">将文件拖到此处，或<em>点击上传</em></div>
        </el-upload>
      </div>
+      <el-upload v-if="type === 'video'"
+        class="upload-demo"
+        :action="action"
+        :on-preview="handlePreview"
+        :on-remove="handleRemove"
+        multiple
+        :limit="limit"
+        :on-exceed="handleExceed"
+        :file-list="fileList">
+        <el-button size="small" type="primary">点击上传</el-button>
+      </el-upload>
+
+      <el-upload v-if="type === 'audio'"
+        class="upload-demo"
+        :action="action"
+        :on-preview="handlePreview"
+        :on-remove="handleRemove"
+        multiple
+        :limit="limit"
+        :on-exceed="handleExceed"
+        :file-list="fileList">
+        <el-button size="small" type="primary">点击上传</el-button>
+      </el-upload>
+    </div>
    </div>
 </template>
 
@@ -71,7 +95,7 @@ export default {
     //接收类型
     accept: {
       type: String,
-      default: 'jpg/png/gif/jpeg'
+      default: 'jpg/png/gif/jpeg/mp4/mp3'
     },
     //拼接前缀
     prefix: {
@@ -124,7 +148,9 @@ export default {
     handleRemove(file, fileList) {
       this.defaultList = JSON.parse(JSON.stringify(fileList));
     },
-
+    handlePreview(file) {
+      console.log(file);
+    },
     // 上传成功
     handleSuccess(res,file,fileList) {
       // this.defaultList.push(file);

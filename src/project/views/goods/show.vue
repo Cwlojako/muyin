@@ -116,6 +116,7 @@
         <div>
           <h4>规格设置</h4>
           <el-button type="primary" class='addSepc-btn' @click='showAddSpec'>新增</el-button>
+          <el-button type="info" @click='handleApplicate'>应用</el-button>
         </div>
         <el-table
           :data="specData">
@@ -128,43 +129,43 @@
           <el-table-column label="操作">
             <template slot-scope="scope">
               <el-button type="text" size="small" @click='editSpec(scope.row)'>编辑</el-button>
-              <el-button type="text" size="small" @click='deleteSpec(scope.row)'>删除</el-button>
+              <el-button type="text" size="small" @click='deleteSpec(scope.row, scope.$index)'>删除</el-button>
             </template>
           </el-table-column>
         </el-table>
         <div>
           <h4>库存价格管理</h4>
-          <el-form inline ref='stockFormValidate' :model='stockFormValidate'>
+          <el-form inline ref='goodsFormValidate' :model='goodsFormValidate' :rules="rules">
             <el-form-item label="销售价" prop="salePrice">
-              <el-input v-model="stockFormValidate.salePrice" placeholder="请输入销售价"></el-input>
+              <el-input v-model.number="goodsFormValidate.salePrice" placeholder="请输入销售价"></el-input>
             </el-form-item>
             <el-form-item label="原价" prop="originalPrice">
-              <el-input v-model="stockFormValidate.originalPrice" placeholder="请输入原价"></el-input>
+              <el-input v-model.number="goodsFormValidate.originalPrice" placeholder="请输入原价"></el-input>
             </el-form-item>
             <el-form-item label="库存" prop="stocks">
-              <el-input v-model="stockFormValidate.stocks" placeholder="请输入库存"></el-input>
+              <el-input v-model.number="goodsFormValidate.stocks" placeholder="请输入库存"></el-input>
             </el-form-item>
           </el-form>
           <el-button type="primary" class="quick-input-btn" @click='quickText'>一键填充</el-button>
           <el-button type="info" class="submit" @click='submit'>提交</el-button>
         </div>
         <el-table
-          :data="stockData">
+          :data="goodsData">
           <el-table-column type="index" width="50"></el-table-column>
           <el-table-column :prop='item.name' :label="item.name" v-for='(item, index) in specData' :key='index'></el-table-column>
-          <el-table-column prop="sellPrice" label="销售价(元)">
+          <el-table-column prop="salePrice" label="销售价(元)">
             <template slot-scope='scope'>
-              <el-input v-model='sellPriceArr[scope.$index]' class='stock-input'></el-input>
+              <el-input v-model='scope.row.salePrice' class='stock-input' type='number' min='0'></el-input>
             </template>
           </el-table-column>
           <el-table-column prop="originalPrice" label="原价(元)">
             <template slot-scope='scope'>
-              <el-input v-model='originalPriceArr[scope.$index]' class='stock-input'></el-input>
+              <el-input v-model='scope.row.originalPrice' class='stock-input' type='number' min='0'></el-input>
             </template>
           </el-table-column>
           <el-table-column prop="stocks" label="库存">
             <template slot-scope='scope'>
-              <el-input v-model='stocksArr[scope.$index]' class='stock-input'></el-input>
+              <el-input v-model='scope.row.stocks' class='stock-input' type='number' min='0'></el-input>
             </template>
           </el-table-column>
           <el-table-column prop="img" label="图片">
@@ -174,8 +175,8 @@
                 action="/api/attachment/upload"
                 :show-file-list="false"
                 :on-success="handleSuccess">
-                <img :src='`${$store.state.prefix}${imageUrlArr[scope.$index]}`' 
-                  v-if="imageUrlArr[scope.$index]" 
+                <img :src='`${$store.state.prefix}${scope.row.image}`' 
+                  v-if="scope.row.image"
                   style='width: 50px; height: 50px;border-radius: 5px;'
                   @click='handleUpload(scope.$index)'
                 />
@@ -297,6 +298,7 @@
     <text-edit
       :dialog-visible="textEditProps.visible"
       @on-dialog-close="handleClose"
+      :description='description'
       @onRefreshData="findById"
       :id="id"
     />
@@ -368,7 +370,7 @@
 <script>
   import { findById, enableSellable, disableSellable, enableFeatured, disableFeatured, enableSalable, disableSalable } from '@/project/service/product'
   import { searchAttribute, save, deleteById, update } from '@/project/service/attribute'
-  import { saveValue, deleteValueById } from '@/project/service/value'
+  import { saveValue, deleteValueById, produce } from '@/project/service/value'
   import textEdit from './textEdit'
   import IEdit from './edit'
   import ICreateSpec from './createSpec' // 添加商品规格弹框组件
@@ -411,6 +413,8 @@
         inputValue: '',
         showImgSrc: '',
         dynamicTags: [],
+        // 图文详情
+        description: '',
         specFormValidate: {
           name: '',
           goodsList: []
@@ -418,10 +422,16 @@
         specRuleValidate: {
           name: [{required: true, message: '规格名称不能为空', trigger: 'blur'}]
         },
-        stockFormValidate: {
+        goodsFormValidate: {
           originalPrice: null,
           salePrice: null,
-          stocks: null
+          stocks: null,
+          image: ''
+        },
+        rules: {
+          originalPrice: [{type:'number', message: '输入项必须为数字值', tigger: 'blur'}],
+          salePrice: [{type:'number', message: '输入项必须为数字值', tigger: 'blur'}],
+          stocks: [{type:'number', message: '输入项必须为数字值', tigger: 'blur'}]
         },
         // 添加或者编辑规格（“添加”，“编辑”）
         type: '添加',
@@ -438,42 +448,20 @@
         // 商品规格数据列表
         specData: [],
         // 库存数据列表
-        stockData: [],
+        goodsData: [],
         // 批次数据列表
-        batchData: [
-          {
-            id: '2020020212',
-            startTime: '2020-02-02',
-            endTime: '2023-02-02',
-            number: 300,
-            stock: 250,
-            status: '启用'
-          }
-        ],
+        batchData: [],
         // 批次详情数据列表
-        batchDetailData: [
-          {
-            color: '黑色',
-            size: 'L',
-            number: 50,
-            stock: 50
-          }
-        ],
+        batchDetailData: [],
         data: [],
-        // 上传图片绑定数组
-        imageUrlArr: [],
-        // 销售价绑定数组
-        sellPriceArr: [],
-        originalPriceArr: [],
-        stocksArr: [],
         uploadId: null
       }
     },
     created() {
-      // 获取商品详细信息
-      this.findById()
       // 获取商品规格
       this.getSpec()
+      // 获取商品详细信息
+      this.findById()
     },
     methods: {
       // 显示新增规格弹框
@@ -517,8 +505,8 @@
                 this.addSpecItemVisible = false
                 this.specData.push({name: this.specFormValidate.name, value: [...this.dynamicTags]})
                 // 动态生成库存列表数据
-                this.valueListArr.push([...this.dynamicTags])
-                this.generateStockData(this.valueListArr)
+                // this.valueListArr.push([...this.dynamicTags])
+                // this.generategoodsData(this.valueListArr)
                 // 清空重置数据
                 this.dynamicTags = []
                 this.specFormValidate.name = ''
@@ -535,6 +523,9 @@
                 this.addSpecItemVisible = false
                 this.specData.splice(this.updateIndex, 1)
                 this.specData.splice(this.updateIndex, 0, param)
+                // this.valueListArr.splice(this.updateIndex, 1)
+                // this.valueListArr.splice(this.updateIndex, 0, [...this.dynamicTags])
+                // this.generategoodsData(this.valueListArr)
                 // 发送更新编辑规格请求
                 update({attribute: {id: this.attributeId, name: this.specFormValidate.name}}, res => {
                   this.$message.success('编辑规格成功')
@@ -546,7 +537,6 @@
       },
       // 删除规格值
       handleDelete(tag) {
-        this.dynamicTags.splice(this.dynamicTags.indexOf(tag), 1)
         let valueList = this.attributeData.find(item => item.id === this.attributeId).valueList
         let filterValueList = valueList.filter(item => item.text === tag)
         // 默认删除最后添加并且重复的一个
@@ -554,6 +544,7 @@
         // 发送删除规格值请求
         deleteValueById({id: valueId}, res => {
           this.$message.success('删除规格值成功')
+          this.dynamicTags.splice(this.dynamicTags.indexOf(tag), 1)
         })
       },
       // 显示输入框
@@ -589,16 +580,19 @@
         }
       },
       // 删除规格
-      deleteSpec(row) {
+      deleteSpec(row, index) {
+        console.log(this.valueListArr)
         this.$confirm(`确定删除该条规格属性吗？`, '删除提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
           this.specData.splice(this.specData.findIndex(item => item.id === row.id), 1)
+          // this.valueListArr.splice(index, 1)
+          // this.generategoodsData(this.valueListArr)
           // 删除规格请求
           deleteById({id: row.id}, res => {
-            this.$message.success('删除规格成功')
+            this.$message.success('删除规格成功')  
           })
         }).catch(() => {
           this.$message({
@@ -613,6 +607,12 @@
         this.dynamicTags = []
         this.$refs.specFormValidate.resetFields()
         this.inputVisible = false
+      },
+      // 规格应用(调用value下的produce接口)
+      handleApplicate() {
+        producer({productId: this.id}, res => {
+          this.findById()
+        })
       },
       // 图片预览
       showImg(src) {
@@ -635,27 +635,33 @@
             this.valueListArr.push(value)
             this.specData.push(param)
           })
-          this.generateStockData(this.valueListArr)
+          // this.generategoodsData(this.valueListArr)
         })
       },
       // 动态生成库存列表数据
-      generateStockData(valueListArr) {
-        this.stockData = []
+      generategoodsData(valueListArr, goodsList) {
+        this.goodsData = []
         // 伪数组转化为数组
         let arr = Array.prototype.slice.call(this.valueListArr)
         // 组合动态生成表格数据
         let result = reduceMutipleArr(arr)
         for(let i = 0, len = result.length; i < len; i++) {
-          this.imageUrlArr.push('')
-          this.sellPriceArr.push('')
-          this.originalPriceArr.push('')
-          this.stocksArr.push('')
           let param = {}
+          param.id = goodsList[i].id
+          // 销售价
+          param.salePrice = 0
+          // 原价
+          param.originalPrice = 0
+          // 库存
+          param.stocks = 0
+          // 图片
+          param.image = ''
           for(let j = 0, len = this.specData.length; j < len; j++) {
             param[this.specData[j].name] = result[i].split('-')[j]
           }
-          this.stockData.push(param)
+          this.goodsData.push(param)
         }
+        console.log(this.goodsData)
       },
       // 显示勾选的规格值
       handleShowSpec(checkList) {
@@ -672,6 +678,10 @@
       findById() {
         findById({id: this.id}, res => {
           this.product = res
+          this.description = res.description
+          if (res.goodsList.length > 0) {
+            this.generategoodsData(this.valueListArr, res.goodsList)
+          }
         })
       },
       handleClick(command){
@@ -817,29 +827,28 @@
       handleSave() {},
       // 上传图片成功
       handleSuccess(val) {
-        this.imageUrlArr.splice(this.uploadId, 1)
-        this.imageUrlArr.splice(this.uploadId, 0, val.data)
+        // console.log(val)
+        this.goodsData[this.uploadId].image = val.data
       },
       handleUpload(index) {
         this.uploadId = index
       },
       // 一键填充
       quickText() {
-        for(let i = 0, len = this.sellPriceArr.length; i < len; i++) {
-          this.sellPriceArr.splice(i, 1)
-          this.sellPriceArr.splice(i, 0, this.stockFormValidate.salePrice)
-          this.originalPriceArr.splice(i, 1)
-          this.originalPriceArr.splice(i, 0, this.stockFormValidate.originalPrice)
-          this.stocksArr.splice(i, 1)
-          this.stocksArr.splice(i, 0, this.stockFormValidate.stocks)
-        }
+        this.$refs.goodsFormValidate.validate(valid => {
+          if (!valid) return false
+          for (let i = 0, len = this.goodsData.length; i < len; i++) {
+            this.goodsData[i].salePrice = this.goodsFormValidate.salePrice
+            this.goodsData[i].originalPrice = this.goodsFormValidate.originalPrice
+            this.goodsData[i].stocks = this.goodsFormValidate.stocks
+          }
+          this.$refs.goodsFormValidate.resetFields()
+        })
+        
       },
       // 提交库存列表
       submit() {
-        console.log(this.sellPriceArr)
-        console.log(this.originalPriceArr)
-        console.log(this.stocksArr)
-        console.log(this.imageUrlArr)
+        console.log(this.goodsData)
       }
     },
     filters: {
